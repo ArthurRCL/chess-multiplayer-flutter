@@ -1,0 +1,47 @@
+name: xadrez_online
+description: "Aplicativo mobile de xadrez online multijogador com convite via link."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Navegação e deep links
+  go_router: ^13.2.0
+  app_links: ^6.1.1
+
+  # HTTP Client
+  dio: ^5.4.3+1
+
+  # WebSocket (STOMP)
+  stomp_dart_client: ^3.0.1
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Armazenamento seguro do JWT (mobile)
+  flutter_secure_storage: ^9.2.2
+
+  # Armazenamento para web (shared_preferences como fallback no Chrome)
+  shared_preferences: ^2.3.2
+
+  # Compartilhar link de convite
+  share_plus: ^9.0.0
+
+  # Ícones
+  cupertino_icons: ^1.0.6
+
+  # Fontes via Google Fonts (sem precisar de arquivos locais)
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

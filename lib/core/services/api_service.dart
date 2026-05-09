@@ -1,0 +1,85 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../storage/secure_storage.dart';
+
+/// URL do backend.
+/// - Web (Chrome): usa localhost diretamente
+/// - Android Emulator: usa 10.0.2.2 (loopback do emulador)
+/// - Produção: passa via --dart-define=API_BASE_URL=https://...
+String get _baseUrl {
+  const custom = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  if (custom.isNotEmpty) return custom;
+  // No Chrome/web, o backend está em localhost
+  if (kIsWeb) return 'http://localhost:8080';
+  // No emulador Android, 10.0.2.2 aponta para o localhost da máquina host
+  return 'http://10.0.2.2:8080';
+}
+
+final apiServiceProvider = Provider<ApiService>((ref) {
+  return ApiService(ref.watch(secureStorageProvider));
+});
+
+class ApiService {
+  late final Dio _dio;
+  final SecureStorageService _storage;
+
+  ApiService(this._storage) {
+    _dio = Dio(BaseOptions(
+      baseUrl: _baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 15),
+      headers: {'Content-Type': 'application/json'},
+    ));
+
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await _storage.getToken();
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+    ));
+  }
+
+  // ── Auth ─────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> login(String email, String senha) async {
+    final res = await _dio.post('/api/auth/login', data: {
+      'email': email,
+      'senha': senha,
+    });
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> register(String email, String senha) async {
+    final res = await _dio.post('/api/auth/register', data: {
+      'email': email,
+      'senha': senha,
+    });
+    return res.data as Map<String, dynamic>;
+  }
+
+  // ── Partidas ──────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> criarPartida() async {
+    final res = await _dio.post('/api/partidas');
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> buscarPartida(String id) async {
+    final res = await _dio.get('/api/partidas/$id');
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> entrarNaPartida(String id) async {
+    final res = await _dio.post('/api/partidas/$id/entrar');
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> historico() async {
+    final res = await _dio.get('/api/partidas/historico');
+    return res.data as List<dynamic>;
+  }
+}
