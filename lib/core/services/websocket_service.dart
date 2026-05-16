@@ -2,10 +2,14 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../storage/secure_storage.dart';
 
-const _wsUrl = String.fromEnvironment(
-  'WS_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8080/ws',
-);
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+String get _wsUrl {
+  const custom = String.fromEnvironment('WS_BASE_URL', defaultValue: '');
+  if (custom.isNotEmpty) return custom;
+  if (kIsWeb) return 'http://localhost:8080/ws';
+  return 'http://10.0.2.2:8080/ws';
+}
 
 final webSocketServiceProvider = Provider<WebSocketService>((ref) {
   return WebSocketService(ref.watch(secureStorageProvider));

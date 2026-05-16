@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Renderiza o tabuleiro de xadrez 8x8.
-/// Recebe o FEN para determinar as peças, e callbacks para interação.
+/// Agora utiliza assets em SVG para máxima fidelidade e suporta Drag & Drop.
 class TabuleiroWidget extends StatelessWidget {
   final String fen;
   final String? casaSelecionada;
@@ -11,6 +12,7 @@ class TabuleiroWidget extends StatelessWidget {
   final Color highlightColor;
   final Color selectedColor;
   final void Function(String casa) onCasaTocada;
+  final void Function(String from, String to) onArrastado;
 
   const TabuleiroWidget({
     super.key,
@@ -22,6 +24,7 @@ class TabuleiroWidget extends StatelessWidget {
     required this.highlightColor,
     required this.selectedColor,
     required this.onCasaTocada,
+    required this.onArrastado,
   });
 
   // Parseia a parte de posição do FEN para um mapa {casa: peça}
@@ -47,6 +50,25 @@ class TabuleiroWidget extends StatelessWidget {
     return mapa;
   }
 
+  /// Mapeia o caractere FEN para o SVG da peça Cburnett
+  String? _getSvgAsset(String char) {
+    switch (char) {
+      case 'K': return 'assets/pieces/wK.svg';
+      case 'Q': return 'assets/pieces/wQ.svg';
+      case 'R': return 'assets/pieces/wR.svg';
+      case 'B': return 'assets/pieces/wB.svg';
+      case 'N': return 'assets/pieces/wN.svg';
+      case 'P': return 'assets/pieces/wP.svg';
+      case 'k': return 'assets/pieces/bK.svg';
+      case 'q': return 'assets/pieces/bQ.svg';
+      case 'r': return 'assets/pieces/bR.svg';
+      case 'b': return 'assets/pieces/bB.svg';
+      case 'n': return 'assets/pieces/bN.svg';
+      case 'p': return 'assets/pieces/bP.svg';
+      default: return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pecas = _parsearFen(fen);
@@ -61,99 +83,100 @@ class TabuleiroWidget extends StatelessWidget {
 
     return AspectRatio(
       aspectRatio: 1,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: darkSquare, width: 4),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: fileiras.map((fileira) {
-            return Expanded(
-              child: Row(
-                children: colOrdem.map((ci) {
-                  final col = colunas[ci];
-                  final casa = '$col$fileira';
-                  final isClara = (ci + fileira) % 2 == 0;
-                  final peca = pecas[casa];
-                  final selecionada = casaSelecionada == casa;
+      child: Column(
+        children: fileiras.map((fileira) {
+          return Expanded(
+            child: Row(
+              children: colOrdem.map((ci) {
+                final col = colunas[ci];
+                final casa = '$col$fileira';
+                // a1 (0 + 1 = 1) -> 1 % 2 == 0 é falso, então é escuro.
+                final isClara = (ci + fileira) % 2 == 0;
+                final peca = pecas[casa];
+                final asset = peca != null ? _getSvgAsset(peca) : null;
+                final selecionada = casaSelecionada == casa;
 
-                  Color corFundo = isClara ? lightSquare : darkSquare;
-                  if (selecionada) corFundo = selectedColor;
+                return Expanded(
+                  child: DragTarget<String>(
+                    onAccept: (from) {
+                      if (from != casa) {
+                        onArrastado(from, casa);
+                      }
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      Color corFundo = isClara ? lightSquare : darkSquare;
+                      if (selecionada) {
+                        corFundo = selectedColor;
+                      } else if (candidateData.isNotEmpty) {
+                        corFundo = highlightColor;
+                      }
 
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => onCasaTocada(casa),
-                      child: Container(
-                        color: corFundo,
-                        child: Stack(
-                          children: [
-                            // Coordenada (canto inferior esquerdo da coluna a / canto superior direito da fileira 8)
-                            if (ci == 0)
-                              Positioned(
-                                top: 2,
-                                left: 3,
-                                child: Text(
-                                  '$fileira',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: isClara ? darkSquare : lightSquare,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            if (fileira == (invertido ? 8 : 1))
-                              Positioned(
-                                bottom: 2,
-                                right: 3,
-                                child: Text(
-                                  col,
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: isClara ? darkSquare : lightSquare,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            // Peça
-                            if (peca != null)
-                              Center(
-                                child: FittedBox(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(2),
-                                    child: Text(
-                                      _fenParaUnicode(peca),
-                                      style: const TextStyle(fontSize: 36),
+                      return GestureDetector(
+                        onTap: () => onCasaTocada(casa),
+                        child: Container(
+                          color: corFundo,
+                          child: Stack(
+                            children: [
+                              // Coordenada numérica (esquerda)
+                              if (ci == (invertido ? 7 : 0))
+                                Positioned(
+                                  top: 2,
+                                  left: 3,
+                                  child: Text(
+                                    '$fileira',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 11,
+                                      color: isClara ? darkSquare : lightSquare,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
-                              ),
-                          ],
+                              // Coordenada alfabética (fundo direito)
+                              if (fileira == (invertido ? 8 : 1))
+                                Positioned(
+                                  bottom: 0,
+                                  right: 3,
+                                  child: Text(
+                                    col,
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 11,
+                                      color: isClara ? darkSquare : lightSquare,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              // Peça com suporte a Drag
+                              if (asset != null)
+                                Positioned.fill(
+                                  child: Draggable<String>(
+                                    data: casa,
+                                    feedback: SizedBox(
+                                      // Multiplica um pouco o tamanho no drag para efeito visual
+                                      width: MediaQuery.of(context).size.width / 8 * 1.2,
+                                      height: MediaQuery.of(context).size.width / 8 * 1.2,
+                                      child: SvgPicture.asset(asset),
+                                    ),
+                                    childWhenDragging: Opacity(
+                                      opacity: 0.3,
+                                      child: SvgPicture.asset(asset),
+                                    ),
+                                    child: SvgPicture.asset(asset),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            );
-          }).toList(),
-        ),
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        }).toList(),
       ),
     );
-  }
-
-  /// Converte o caractere FEN para o símbolo Unicode da peça.
-  /// Brancas: maiúsculas → símbolos brancos; Negras: minúsculas → símbolos negros
-  String _fenParaUnicode(String fen) {
-    const map = {
-      'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-      'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟',
-    };
-    return map[fen] ?? fen;
   }
 }
