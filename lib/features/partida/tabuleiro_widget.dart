@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 class TabuleiroWidget extends StatelessWidget {
   final String fen;
   final String? casaSelecionada;
+  /// Casa de origem do pré-movimento pendente (pintada em âmbar).
+  final String? casaPreMove;
   final bool invertido;
   final Color lightSquare;
   final Color darkSquare;
@@ -18,6 +20,7 @@ class TabuleiroWidget extends StatelessWidget {
     super.key,
     required this.fen,
     required this.casaSelecionada,
+    this.casaPreMove,
     required this.invertido,
     required this.lightSquare,
     required this.darkSquare,
@@ -107,6 +110,9 @@ class TabuleiroWidget extends StatelessWidget {
                       Color corFundo = isClara ? lightSquare : darkSquare;
                       if (selecionada) {
                         corFundo = selectedColor;
+                      } else if (casa == casaPreMove) {
+                        // Pré-movimento: destaque âmbar/laranja
+                        corFundo = const Color(0xFFFFA726).withOpacity(0.75);
                       } else if (candidateData.isNotEmpty) {
                         corFundo = highlightColor;
                       }
