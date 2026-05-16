@@ -6,9 +6,14 @@ import '../../core/services/websocket_service.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/animated_status_chip.dart';
+import 'models/pre_move.dart';
+import 'services/pre_move_service.dart';
 import 'tabuleiro_widget.dart';
+import 'widgets/relogio_widget.dart';
+import 'widgets/painel_fim_partida.dart';
 
-// Estado da partida em tempo real
+// ── Estado da partida ─────────────────────────────────────────────────────────
+
 class PartidaState {
   final String fen;
   final String status;
@@ -20,6 +25,10 @@ class PartidaState {
   final bool wsConectado;
   final String? erro;
   final bool minhasCorEhBrancas;
+  final String? meuEmail;
+  final int tempoBrancasMs;
+  final int tempoNegrasMs;
+  final String? motivoFim;
 
   const PartidaState({
     this.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -32,7 +41,16 @@ class PartidaState {
     this.wsConectado = false,
     this.erro,
     this.minhasCorEhBrancas = true,
+    this.meuEmail,
+    this.tempoBrancasMs = -1,
+    this.tempoNegrasMs = -1,
+    this.motivoFim,
   });
+
+  bool get finalizada => status == 'FINALIZADA';
+  bool get minhaVez =>
+      (vezDe == 'BRANCAS' && minhasCorEhBrancas) ||
+      (vezDe == 'NEGRAS' && !minhasCorEhBrancas);
 
   PartidaState copyWith({
     String? fen,
@@ -45,6 +63,10 @@ class PartidaState {
     bool? wsConectado,
     String? erro,
     bool? minhasCorEhBrancas,
+    String? meuEmail,
+    int? tempoBrancasMs,
+    int? tempoNegrasMs,
+    String? motivoFim,
   }) =>
       PartidaState(
         fen: fen ?? this.fen,
@@ -57,8 +79,14 @@ class PartidaState {
         wsConectado: wsConectado ?? this.wsConectado,
         erro: erro,
         minhasCorEhBrancas: minhasCorEhBrancas ?? this.minhasCorEhBrancas,
+        meuEmail: meuEmail ?? this.meuEmail,
+        tempoBrancasMs: tempoBrancasMs ?? this.tempoBrancasMs,
+        tempoNegrasMs: tempoNegrasMs ?? this.tempoNegrasMs,
+        motivoFim: motivoFim ?? this.motivoFim,
       );
 }
+
+// ── Tela da Partida ───────────────────────────────────────────────────────────
 
 class PartidaScreen extends ConsumerStatefulWidget {
   final String partidaId;
@@ -72,79 +100,208 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
   PartidaState _estado = const PartidaState();
   String? _casaSelecionada;
 
+  // Pré-movimento: gerenciado por service de responsabilidade única
+  final _preMoveService = PreMoveService();
+
   @override
   void initState() {
     super.initState();
     _inicializar();
   }
 
+  // ── Inicialização ─────────────────────────────────────────────────────────
+
   Future<void> _inicializar() async {
     try {
-      final info =
-          await ref.read(apiServiceProvider).buscarPartida(widget.partidaId);
-      final email = await ref.read(secureStorageProvider).getEmail();
+      final api = ref.read(apiServiceProvider);
+      final storage = ref.read(secureStorageProvider);
+
+      final info = await api.buscarPartida(widget.partidaId);
+      final email = await storage.getEmail();
 
       var status = info['status'] as String?;
       var fen = info['fen'] as String?;
 
       if (info['status'] == 'AGUARDANDO' &&
           info['jogadorBrancasEmail'] != email) {
-        final newState = await ref.read(apiServiceProvider).entrarNaPartida(widget.partidaId);
+        final newState = await api.entrarNaPartida(widget.partidaId);
         status = newState['status'] as String?;
         fen = newState['fen'] as String?;
       }
 
       final minhasCorEhBrancas = info['jogadorBrancasEmail'] == email;
 
-      setState(() {
-        _estado = _estado.copyWith(
-          fen: fen,
-          status: status,
-          minhasCorEhBrancas: minhasCorEhBrancas,
-        );
-      });
-
-      ref.read(webSocketServiceProvider).conectar(
-            partidaId: widget.partidaId,
-            userEmail: email ?? '',
-            onConnected: () {
-              if (mounted) {
-                setState(() {
-                  _estado = _estado.copyWith(wsConectado: true);
-                });
-              }
-            },
-            onEstado: (data) {
-              final raw = data['raw'] as String?;
-              if (raw == null) return;
-              final parsed = jsonDecode(raw) as Map<String, dynamic>;
-              if (mounted) {
-                setState(() {
-                  _estado = _estado.copyWith(
-                    fen: parsed['fen'] as String?,
-                    status: parsed['status'] as String?,
-                    vezDe: parsed['vezDe'] as String?,
-                    vencedorEmail: parsed['vencedorEmail'] as String?,
-                    xeque: parsed['xeque'] as bool? ?? false,
-                    xequeMate: parsed['xequeMate'] as bool? ?? false,
-                    afogamento: parsed['afogamento'] as bool? ?? false,
-                  );
-                });
-              }
-            },
-            onErro: (erro) {
-              if (mounted) {
-                setState(() {
-                  _estado = _estado.copyWith(erro: erro);
-                });
-              }
-            },
+      if (mounted) {
+        setState(() {
+          _estado = _estado.copyWith(
+            fen: fen,
+            status: status,
+            minhasCorEhBrancas: minhasCorEhBrancas,
+            meuEmail: email,
           );
+        });
+      }
+
+      _conectarWebSocket(email ?? '');
     } catch (e) {
-      setState(() {
-        _estado = _estado.copyWith(erro: 'Erro ao carregar partida: $e');
-      });
+      if (mounted) {
+        setState(() {
+          _estado = _estado.copyWith(erro: 'Erro ao carregar partida: $e');
+        });
+      }
     }
+  }
+
+  void _conectarWebSocket(String email) {
+    ref.read(webSocketServiceProvider).conectar(
+          partidaId: widget.partidaId,
+          userEmail: email,
+          onConnected: () {
+            if (mounted) setState(() => _estado = _estado.copyWith(wsConectado: true));
+          },
+          onEstado: _onEstadoRecebido,
+          onErro: (erro) {
+            if (mounted) setState(() => _estado = _estado.copyWith(erro: erro));
+          },
+          onNovaPartida: _onRevancheAceita,
+        );
+  }
+
+  // ── Handlers de WebSocket ─────────────────────────────────────────────────
+
+  void _onEstadoRecebido(Map<String, dynamic> data) {
+    final raw = data['raw'] as String?;
+    if (raw == null) return;
+    final parsed = jsonDecode(raw) as Map<String, dynamic>;
+
+    final novoStatus = parsed['status'] as String? ?? _estado.status;
+    final novaVez = parsed['vezDe'] as String? ?? _estado.vezDe;
+
+    if (!mounted) return;
+    setState(() {
+      _estado = _estado.copyWith(
+        fen: parsed['fen'] as String?,
+        status: novoStatus,
+        vezDe: novaVez,
+        vencedorEmail: parsed['vencedorEmail'] as String?,
+        xeque: parsed['xeque'] as bool? ?? false,
+        xequeMate: parsed['xequeMate'] as bool? ?? false,
+        afogamento: parsed['afogamento'] as bool? ?? false,
+        tempoBrancasMs: (parsed['tempoBrancasMs'] as num?)?.toInt() ?? _estado.tempoBrancasMs,
+        tempoNegrasMs: (parsed['tempoNegrasMs'] as num?)?.toInt() ?? _estado.tempoNegrasMs,
+        motivoFim: parsed['motivoFim'] as String?,
+      );
+    });
+
+    // Executa pré-movimento automaticamente se agora é minha vez
+    _tentarExecutarPreMove();
+  }
+
+  void _onRevancheAceita(String novaPartidaId) {
+    if (!mounted) return;
+    // Navega para a nova partida substituindo a tela atual
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => PartidaScreen(partidaId: novaPartidaId),
+      ),
+    );
+  }
+
+  // ── Pré-movimentos ────────────────────────────────────────────────────────
+
+  void _tentarExecutarPreMove() {
+    if (!_estado.minhaVez || _estado.status != 'EM_ANDAMENTO') return;
+    final preMove = _preMoveService.consumir();
+    if (preMove == null) return;
+
+    ref.read(webSocketServiceProvider).enviarMovimento(
+          widget.partidaId,
+          preMove.from,
+          preMove.to,
+          promocao: preMove.promocao,
+        );
+  }
+
+  // ── Interações com o tabuleiro ────────────────────────────────────────────
+
+  void _onCasaTocada(String casa) {
+    if (_estado.status != 'EM_ANDAMENTO') return;
+
+    if (_estado.minhaVez) {
+      _tratarMovimentoNormal(casa);
+    } else {
+      _tratarPreMove(casa);
+    }
+  }
+
+  void _tratarMovimentoNormal(String casa) {
+    if (_casaSelecionada == null) {
+      setState(() => _casaSelecionada = casa);
+    } else {
+      final from = _casaSelecionada!;
+      setState(() => _casaSelecionada = null);
+      ref.read(webSocketServiceProvider).enviarMovimento(
+            widget.partidaId, from, casa);
+    }
+  }
+
+  void _tratarPreMove(String casa) {
+    if (_casaSelecionada == null) {
+      setState(() => _casaSelecionada = casa);
+    } else {
+      final from = _casaSelecionada!;
+      setState(() => _casaSelecionada = null);
+      _preMoveService.registrar(from, casa);
+    }
+  }
+
+  void _onArrastado(String from, String to) {
+    if (_estado.status != 'EM_ANDAMENTO') return;
+    setState(() => _casaSelecionada = null);
+
+    if (_estado.minhaVez) {
+      ref.read(webSocketServiceProvider).enviarMovimento(
+            widget.partidaId, from, to);
+    } else {
+      _preMoveService.registrar(from, to);
+    }
+  }
+
+  // ── Ações ─────────────────────────────────────────────────────────────────
+
+  void _desistir() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Desistir da partida?'),
+        content: const Text(
+            'Seu adversário será declarado vencedor. Você tem certeza?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: AppColors.textPrimary,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              ref
+                  .read(webSocketServiceProvider)
+                  .desistir(widget.partidaId);
+            },
+            child: const Text('Desistir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _solicitarRevanche() {
+    ref.read(webSocketServiceProvider).solicitarRevanche(widget.partidaId);
   }
 
   @override
@@ -153,53 +310,26 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
     super.dispose();
   }
 
-  void _onCasaTocada(String casa) {
-    if (_estado.status != 'EM_ANDAMENTO') return;
-
-    final minhaVez =
-        (_estado.vezDe == 'BRANCAS' && _estado.minhasCorEhBrancas) ||
-            (_estado.vezDe == 'NEGRAS' && !_estado.minhasCorEhBrancas);
-    if (!minhaVez) return;
-
-    if (_casaSelecionada == null) {
-      setState(() {
-        _casaSelecionada = casa;
-      });
-    } else {
-      final from = _casaSelecionada!;
-      setState(() {
-        _casaSelecionada = null;
-      });
-      ref.read(webSocketServiceProvider).enviarMovimento(
-            widget.partidaId,
-            from,
-            casa,
-          );
-    }
-  }
-
-  void _onArrastado(String from, String to) {
-    if (_estado.status != 'EM_ANDAMENTO') return;
-
-    final minhaVez =
-        (_estado.vezDe == 'BRANCAS' && _estado.minhasCorEhBrancas) ||
-            (_estado.vezDe == 'NEGRAS' && !_estado.minhasCorEhBrancas);
-    if (!minhaVez) return;
-
-    setState(() {
-      _casaSelecionada = null; // Limpa se houver algo selecionado por clique
-    });
-
-    ref.read(webSocketServiceProvider).enviarMovimento(
-          widget.partidaId,
-          from,
-          to,
-        );
-  }
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     const chessTheme = AppTheme.defaultTheme;
+    final vezDeBrancas = _estado.vezDe == 'BRANCAS';
+
+    // Os relógios: adversário em cima, meu embaixo
+    final meuTempoMs = _estado.minhasCorEhBrancas
+        ? _estado.tempoBrancasMs
+        : _estado.tempoNegrasMs;
+    final adversarioTempoMs = _estado.minhasCorEhBrancas
+        ? _estado.tempoNegrasMs
+        : _estado.tempoBrancasMs;
+    final minhaVezAtiva = _estado.minhaVez && _estado.status == 'EM_ANDAMENTO';
+    final adversarioAtivo = !_estado.minhaVez && _estado.status == 'EM_ANDAMENTO';
+
+    // Indicação visual de pré-movimento: destaca casa de origem em laranja
+    final preMoveAtual = _preMoveService.atual;
+    final casaPreMoveFrom = preMoveAtual?.from;
 
     return Scaffold(
       appBar: AppBar(
@@ -216,19 +346,34 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppGradients.background,
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.background),
         child: Column(
           children: [
             // Status bar premium
             _buildStatusBar(),
 
+            // Relógio do adversário (topo)
+            if (adversarioTempoMs != -1)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    RelogioWidget(
+                      tempoMs: adversarioTempoMs,
+                      ativo: adversarioAtivo,
+                      label: 'Adversário',
+                    ),
+                  ],
+                ),
+              ),
+
             // Tabuleiro com borda elegante
             Expanded(
               child: Center(
                 child: Container(
-                  margin: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.gold2, width: 4),
                     borderRadius: BorderRadius.circular(4),
@@ -243,6 +388,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                   child: TabuleiroWidget(
                     fen: _estado.fen,
                     casaSelecionada: _casaSelecionada,
+                    casaPreMove: casaPreMoveFrom,
                     invertido: !_estado.minhasCorEhBrancas,
                     lightSquare: chessTheme.lightSquare,
                     darkSquare: chessTheme.darkSquare,
@@ -255,15 +401,47 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
               ),
             ),
 
+            // Relógio do jogador (base)
+            if (meuTempoMs != -1)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    RelogioWidget(
+                      tempoMs: meuTempoMs,
+                      ativo: minhaVezAtiva,
+                      label: 'Você',
+                    ),
+                  ],
+                ),
+              ),
+
+            // Painel de fim de partida (substituindo o chip antigo quando finalizada)
+            if (_estado.finalizada)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: PainelFimPartida(
+                  vencedorEmail: _estado.vencedorEmail,
+                  motivoFim: _estado.motivoFim,
+                  meuEmail: _estado.meuEmail ?? '',
+                  onRevanche: _solicitarRevanche,
+                  onVoltar: () => Navigator.of(context).pop(),
+                ),
+              ),
+
             // Mensagem de erro
             if (_estado.erro != null)
               Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.danger.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.danger.withOpacity(0.5)),
+                  border:
+                      Border.all(color: AppColors.danger.withOpacity(0.5)),
                 ),
                 child: Row(
                   children: [
@@ -278,7 +456,8 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                   ],
                 ),
               ),
-            const SizedBox(height: 24),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -286,6 +465,24 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
   }
 
   Widget _buildStatusBar() {
+    // Se finalizada, o PainelFimPartida já exibe o resultado — chip mínimo
+    if (_estado.finalizada) {
+      return Container(
+        width: double.infinity,
+        color: AppColors.surface1,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+        child: Center(
+          child: AnimatedStatusChip(
+            label: _estado.vencedorEmail != null
+                ? 'Fim de jogo'
+                : 'Empate',
+            type: StatusType.finished,
+            pulsing: false,
+          ),
+        ),
+      );
+    }
+
     StatusType chipType;
     String chipLabel;
     bool pulse = false;
@@ -296,22 +493,23 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
       pulse = true;
     } else if (_estado.xequeMate) {
       chipType = StatusType.checkmate;
-      chipLabel = 'Xeque-mate! Vencedor: ${_estado.vencedorEmail?.split('@').first ?? "?"}';
+      chipLabel =
+          'Xeque-mate! Vencedor: ${_estado.vencedorEmail?.split('@').first ?? "?"}';
     } else if (_estado.afogamento) {
       chipType = StatusType.draw;
       chipLabel = 'Afogamento — Empate';
-    } else if (_estado.status == 'FINALIZADA') {
-      chipType = StatusType.finished;
-      chipLabel = _estado.vencedorEmail != null
-          ? 'Vencedor: ${_estado.vencedorEmail?.split('@').first}'
-          : 'Empate';
     } else if (_estado.xeque) {
       chipType = StatusType.check;
       chipLabel = '⚠ Xeque! Vez das ${_estado.vezDe.toLowerCase()}';
       pulse = true;
     } else {
       chipType = StatusType.playing;
-      chipLabel = 'Vez das ${_estado.vezDe.toLowerCase()}';
+      chipLabel = _estado.minhaVez
+          ? 'Sua vez'
+          : 'Vez do adversário';
+      if (_preMoveService.temPreMove) {
+        chipLabel += ' · Pré-move registrado';
+      }
       pulse = true;
     }
 
@@ -325,33 +523,6 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
           type: chipType,
           pulsing: pulse,
         ),
-      ),
-    );
-  }
-
-  void _desistir() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Desistir da partida?'),
-        content: const Text('Seu adversário será declarado vencedor. Você tem certeza?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: AppColors.textPrimary,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(webSocketServiceProvider).desistir(widget.partidaId);
-            },
-            child: const Text('Desistir'),
-          ),
-        ],
       ),
     );
   }
