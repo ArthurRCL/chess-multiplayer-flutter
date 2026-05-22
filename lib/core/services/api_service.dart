@@ -81,6 +81,11 @@ class ApiService {
     return res.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> entrarModoSolo(String id) async {
+    final res = await _dio.post('/api/partidas/$id/solo');
+    return res.data as Map<String, dynamic>;
+  }
+
   Future<List<dynamic>> historico() async {
     final res = await _dio.get('/api/partidas/historico');
     return res.data as List<dynamic>;
