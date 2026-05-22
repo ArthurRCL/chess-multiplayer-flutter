@@ -63,8 +63,11 @@ class ApiService {
 
   // ── Partidas ──────────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> criarPartida() async {
-    final res = await _dio.post('/api/partidas');
+  Future<Map<String, dynamic>> criarPartida({String modoTempo = 'SEM_LIMITE'}) async {
+    final res = await _dio.post(
+      '/api/partidas',
+      queryParameters: {'modoTempo': modoTempo},
+    );
     return res.data as Map<String, dynamic>;
   }
 

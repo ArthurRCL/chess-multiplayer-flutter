@@ -2,10 +2,14 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../storage/secure_storage.dart';
 
-const _wsUrl = String.fromEnvironment(
-  'WS_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8080/ws',
-);
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+String get _wsUrl {
+  const custom = String.fromEnvironment('WS_BASE_URL', defaultValue: '');
+  if (custom.isNotEmpty) return custom;
+  if (kIsWeb) return 'http://localhost:8080/ws';
+  return 'http://10.0.2.2:8080/ws';
+}
 
 final webSocketServiceProvider = Provider<WebSocketService>((ref) {
   return WebSocketService(ref.watch(secureStorageProvider));
@@ -13,6 +17,10 @@ final webSocketServiceProvider = Provider<WebSocketService>((ref) {
 
 typedef EstadoCallback = void Function(Map<String, dynamic> estado);
 typedef ErroCallback = void Function(String erro);
+
+/// Callback disparado quando o servidor confirma uma revanche.
+/// [novaPartidaId] é o ID da nova partida para navegação.
+typedef NovaPartidaCallback = void Function(String novaPartidaId);
 
 class WebSocketService {
   final SecureStorageService _storage;
@@ -27,6 +35,7 @@ class WebSocketService {
     required ErroCallback onErro,
     required String userEmail,
     VoidCallback? onConnected,
+    NovaPartidaCallback? onNovaPartida,
   }) async {
     final token = await _storage.getToken();
 
@@ -37,24 +46,40 @@ class WebSocketService {
           _connected = true;
           onConnected?.call();
 
-          // Inscreve no canal de estado da partida (broadcast)
+          // Canal de estado da partida (broadcast de movimentos e relógio)
           _client!.subscribe(
             destination: '/topic/partida/$partidaId/estado',
             callback: (frame) {
               if (frame.body != null) {
-                // Parsing manual — em produção usar json.decode
                 onEstado({'raw': frame.body});
               }
             },
           );
 
-          // Inscreve no canal de erros privado
+          // Canal de erros privado do usuário
           _client!.subscribe(
             destination: '/user/queue/errors',
             callback: (frame) {
               onErro(frame.body ?? 'Erro desconhecido');
             },
           );
+
+          // Canal de revanche — recebe ID da nova partida
+          if (onNovaPartida != null) {
+            _client!.subscribe(
+              destination: '/topic/partida/$partidaId/revanche',
+              callback: (frame) {
+                if (frame.body != null) {
+                  // Corpo: {"novaPartidaId": "uuid"}
+                  final match = RegExp(r'"novaPartidaId"\s*:\s*"([^"]+)"')
+                      .firstMatch(frame.body!);
+                  if (match != null) {
+                    onNovaPartida(match.group(1)!);
+                  }
+                }
+              },
+            );
+          }
         },
         onDisconnect: (_) {
           _connected = false;
@@ -70,7 +95,8 @@ class WebSocketService {
 
   void enviarMovimento(String partidaId, String from, String to, {String? promocao}) {
     if (!_connected || _client == null) return;
-    final body = '{"from":"$from","to":"$to"${promocao != null ? ',"promocao":"$promocao"' : ''}}';
+    final body =
+        '{"from":"$from","to":"$to"${promocao != null ? ',"promocao":"$promocao"' : ''}}';
     _client!.send(
       destination: '/app/partida/$partidaId/mover',
       body: body,
@@ -80,6 +106,13 @@ class WebSocketService {
   void desistir(String partidaId) {
     if (!_connected || _client == null) return;
     _client!.send(destination: '/app/partida/$partidaId/desistir', body: '{}');
+  }
+
+  /// Solicita revanche via WebSocket. O servidor cria a nova partida com
+  /// cores invertidas e faz broadcast do ID para ambos os jogadores.
+  void solicitarRevanche(String partidaId) {
+    if (!_connected || _client == null) return;
+    _client!.send(destination: '/app/partida/$partidaId/revanche', body: '{}');
   }
 
   void desconectar() {
