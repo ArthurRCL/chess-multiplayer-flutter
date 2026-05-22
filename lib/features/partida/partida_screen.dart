@@ -29,6 +29,7 @@ class PartidaState {
   final int tempoBrancasMs;
   final int tempoNegrasMs;
   final String? motivoFim;
+  final bool modoSolo;
 
   const PartidaState({
     this.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -45,10 +46,13 @@ class PartidaState {
     this.tempoBrancasMs = -1,
     this.tempoNegrasMs = -1,
     this.motivoFim,
+    this.modoSolo = false,
   });
 
   bool get finalizada => status == 'FINALIZADA';
+  // No modo solo sempre é minha vez (controlo os dois lados)
   bool get minhaVez =>
+      modoSolo ||
       (vezDe == 'BRANCAS' && minhasCorEhBrancas) ||
       (vezDe == 'NEGRAS' && !minhasCorEhBrancas);
 
@@ -67,6 +71,7 @@ class PartidaState {
     int? tempoBrancasMs,
     int? tempoNegrasMs,
     String? motivoFim,
+    bool? modoSolo,
   }) =>
       PartidaState(
         fen: fen ?? this.fen,
@@ -83,6 +88,7 @@ class PartidaState {
         tempoBrancasMs: tempoBrancasMs ?? this.tempoBrancasMs,
         tempoNegrasMs: tempoNegrasMs ?? this.tempoNegrasMs,
         motivoFim: motivoFim ?? this.motivoFim,
+        modoSolo: modoSolo ?? this.modoSolo,
       );
 }
 
@@ -130,6 +136,9 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
       }
 
       final minhasCorEhBrancas = info['jogadorBrancasEmail'] == email;
+      // Modo solo: o mesmo usuário é os dois jogadores
+      final ehModoSolo = info['jogadorBrancasEmail'] == info['jogadorNegrasEmail'] &&
+          info['jogadorNegrasEmail'] != null;
 
       if (mounted) {
         setState(() {
@@ -138,6 +147,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
             status: status,
             minhasCorEhBrancas: minhasCorEhBrancas,
             meuEmail: email,
+            modoSolo: ehModoSolo,
           );
         });
       }
@@ -333,9 +343,11 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_estado.status == 'AGUARDANDO'
-            ? 'Aguardando...'
-            : 'Partida em andamento'),
+        title: Text(_estado.modoSolo
+            ? '♟ Modo Solo'
+            : (_estado.status == 'AGUARDANDO'
+                ? 'Aguardando...'
+                : 'Partida em andamento')),
         actions: [
           if (_estado.status == 'EM_ANDAMENTO')
             IconButton(
@@ -504,9 +516,12 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
       pulse = true;
     } else {
       chipType = StatusType.playing;
-      chipLabel = _estado.minhaVez
-          ? 'Sua vez'
-          : 'Vez do adversário';
+      if (_estado.modoSolo) {
+        // No modo solo mostra de qual cor é a vez
+        chipLabel = 'Vez das ${_estado.vezDe == "BRANCAS" ? "\u2659 Brancas" : "\u265f Negras"}';
+      } else {
+        chipLabel = _estado.minhaVez ? 'Sua vez' : 'Vez do adversário';
+      }
       if (_preMoveService.temPreMove) {
         chipLabel += ' · Pré-move registrado';
       }

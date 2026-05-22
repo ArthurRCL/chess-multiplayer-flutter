@@ -35,6 +35,16 @@ class HomeScreen extends ConsumerWidget {
                       isPrimary: true,
                       onTap: () => _criarPartida(context, ref),
                     ),
+                    const SizedBox(height: 16),
+
+                    // Card — Modo Solo (Teste)
+                    ActionCard(
+                      icon: Icons.person,
+                      title: 'Modo Solo',
+                      subtitle: 'Jogue os dois lados para testar',
+                      accentColor: AppColors.gold2,
+                      onTap: () => _jogarSolo(context, ref),
+                    ),
                     const SizedBox(height: 20),
 
                     // Card — Histórico
@@ -160,6 +170,7 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(context);
               await ref.read(authServiceProvider).logout();
+              ref.invalidate(isLoggedInProvider);
               if (context.mounted) context.go('/login');
             },
             child: const Text('Sair'),
@@ -186,6 +197,26 @@ class HomeScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Erro ao criar partida')),
+        );
+      }
+    }
+  }
+
+  Future<void> _jogarSolo(BuildContext context, WidgetRef ref) async {
+    try {
+      // Cria a partida normalmente
+      final data = await ref.read(apiServiceProvider).criarPartida();
+      final id = data['id'] as String;
+
+      // Entra automaticamente como as negras (modo solo)
+      await ref.read(apiServiceProvider).entrarModoSolo(id);
+
+      if (!context.mounted) return;
+      context.push('/partida/$id');
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao iniciar modo solo: $e')),
         );
       }
     }
