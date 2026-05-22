@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'chess_logic.dart';
 
 /// Renderiza o tabuleiro de xadrez 8x8.
 /// Recebe o FEN para determinar as peças, e callbacks para interação.
@@ -52,6 +53,11 @@ class TabuleiroWidget extends StatelessWidget {
     final pecas = _parsearFen(fen);
     const colunas = 'abcdefgh';
 
+    // Calcular movimentos possíveis da peça selecionada
+    final movimentosPossiveis = casaSelecionada != null
+        ? ChessLogic.movimentosPossiveis(fen, casaSelecionada!)
+        : <String>{};
+
     final fileiras = invertido
         ? List.generate(8, (i) => i + 1)
         : List.generate(8, (i) => 8 - i);
@@ -66,7 +72,7 @@ class TabuleiroWidget extends StatelessWidget {
           border: Border.all(color: darkSquare, width: 4),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -82,9 +88,15 @@ class TabuleiroWidget extends StatelessWidget {
                   final isClara = (ci + fileira) % 2 == 0;
                   final peca = pecas[casa];
                   final selecionada = casaSelecionada == casa;
+                  final ehMovimentoPossivel = movimentosPossiveis.contains(casa);
+                  final ehCaptura = ehMovimentoPossivel && peca != null;
 
                   Color corFundo = isClara ? lightSquare : darkSquare;
                   if (selecionada) corFundo = selectedColor;
+                  if (ehMovimentoPossivel && !ehCaptura) {
+                    // Highlight sutil para casas de destino vazia
+                    corFundo = Color.lerp(corFundo, highlightColor, 0.55)!;
+                  }
 
                   return Expanded(
                     child: GestureDetector(
@@ -93,7 +105,7 @@ class TabuleiroWidget extends StatelessWidget {
                         color: corFundo,
                         child: Stack(
                           children: [
-                            // Coordenada (canto inferior esquerdo da coluna a / canto superior direito da fileira 8)
+                            // Coordenada (número de fileira no canto superior esquerdo)
                             if (ci == 0)
                               Positioned(
                                 top: 2,
@@ -107,6 +119,7 @@ class TabuleiroWidget extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            // Coordenada (letra de coluna no canto inferior direito)
                             if (fileira == (invertido ? 8 : 1))
                               Positioned(
                                 bottom: 2,
@@ -129,6 +142,38 @@ class TabuleiroWidget extends StatelessWidget {
                                     child: Text(
                                       _fenParaUnicode(peca),
                                       style: const TextStyle(fontSize: 36),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Indicador de movimento possível — círculo central (casa vazia)
+                            if (ehMovimentoPossivel && !ehCaptura)
+                              Center(
+                                child: FractionallySizedBox(
+                                  widthFactor: 0.34,
+                                  heightFactor: 0.34,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.22),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Indicador de captura — anel ao redor da peça
+                            if (ehCaptura)
+                              Center(
+                                child: FractionallySizedBox(
+                                  widthFactor: 0.95,
+                                  heightFactor: 0.95,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.black.withValues(alpha: 0.30),
+                                        width: 5,
+                                      ),
                                     ),
                                   ),
                                 ),

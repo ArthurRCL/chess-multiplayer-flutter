@@ -6,6 +6,8 @@ import '../../core/services/websocket_service.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../shared/theme/app_theme.dart';
 import 'tabuleiro_widget.dart';
+import 'chess_logic.dart';
+import 'pecas_capturadas_widget.dart';
 
 // Estado da partida em tempo real
 class PartidaState {
@@ -113,6 +115,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
               if (raw == null) return;
               final parsed = jsonDecode(raw) as Map<String, dynamic>;
               setState(() {
+                _casaSelecionada = null; // Limpa seleção ao receber novo estado
                 _estado = _estado.copyWith(
                   fen: parsed['fen'] as String?,
                   status: parsed['status'] as String?,
@@ -150,19 +153,36 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
     if (!minhaVez) return;
 
     if (_casaSelecionada == null) {
+      // Selecionar peça: só aceita se houver peça da cor correta
       setState(() {
         _casaSelecionada = casa;
       });
-    } else {
-      final from = _casaSelecionada!;
+    } else if (_casaSelecionada == casa) {
+      // Tocar na mesma casa: desseleciona
       setState(() {
         _casaSelecionada = null;
       });
-      ref.read(webSocketServiceProvider).enviarMovimento(
-            widget.partidaId,
-            from,
-            casa,
-          );
+    } else {
+      // Verificar se o destino é um movimento válido
+      final movimentos =
+          ChessLogic.movimentosPossiveis(_estado.fen, _casaSelecionada!);
+      if (movimentos.contains(casa)) {
+        // Mover peça
+        final from = _casaSelecionada!;
+        setState(() {
+          _casaSelecionada = null;
+        });
+        ref.read(webSocketServiceProvider).enviarMovimento(
+              widget.partidaId,
+              from,
+              casa,
+            );
+      } else {
+        // Tentar selecionar nova peça no destino clicado
+        setState(() {
+          _casaSelecionada = casa;
+        });
+      }
     }
   }
 
@@ -170,6 +190,22 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     const chessTheme = AppTheme.defaultTheme;
+    final capturadas = ChessLogic.pecasCapturadas(_estado.fen);
+
+    // Quem está em cima e quem está em baixo depende da orientação
+    // Jogador adversário = topo; jogador local = base
+    final pecasTopoLabel = _estado.minhasCorEhBrancas
+        ? 'Capturadas pelo adversário'
+        : 'Capturadas por mim';
+    final pecasTopoList = _estado.minhasCorEhBrancas
+        ? capturadas.negras // Brancas capturadas (adversário capturou)
+        : capturadas.brancas; // Negras capturadas pelo adversário
+
+    final pecasBaseLabel =
+        _estado.minhasCorEhBrancas ? 'Capturadas por mim' : 'Capturadas pelo adversário';
+    final pecasBaseList = _estado.minhasCorEhBrancas
+        ? capturadas.brancas // Negras capturadas (eu capturei)
+        : capturadas.negras;
 
     return Scaffold(
       appBar: AppBar(
@@ -190,6 +226,12 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
           // Indicador de status
           _StatusBar(estado: _estado, theme: theme),
 
+          // Peças capturadas pelo adversário (topo)
+          _PainelCapturadas(
+            label: pecasTopoLabel,
+            pecas: pecasTopoList,
+          ),
+
           // Tabuleiro
           Expanded(
             child: Center(
@@ -206,10 +248,16 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
             ),
           ),
 
+          // Peças capturadas por mim (base)
+          _PainelCapturadas(
+            label: pecasBaseLabel,
+            pecas: pecasBaseList,
+          ),
+
           // Mensagem de erro
           if (_estado.erro != null)
             Container(
-              color: Colors.redAccent.withOpacity(0.2),
+              color: Colors.redAccent.withValues(alpha: 0.2),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(_estado.erro!,
                   style: const TextStyle(color: Colors.redAccent)),
@@ -244,6 +292,30 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Painel compacto de peças capturadas
+// ─────────────────────────────────────────────────────────────────────────────
+class _PainelCapturadas extends StatelessWidget {
+  final String label;
+  final List<String> pecas;
+
+  const _PainelCapturadas({required this.label, required this.pecas});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      color: theme.colorScheme.surface.withValues(alpha: 0.85),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: PecasCapturadas(label: label, pecas: pecas),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Barra de status
+// ─────────────────────────────────────────────────────────────────────────────
 class _StatusBar extends StatelessWidget {
   final PartidaState estado;
   final ThemeData theme;
