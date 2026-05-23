@@ -12,6 +12,7 @@ import 'tabuleiro_widget.dart';
 import 'widgets/relogio_widget.dart';
 import 'widgets/painel_fim_partida.dart';
 import '../home/themes_screen.dart';
+import 'chess_logic.dart';
 
 // ── Estado da partida ─────────────────────────────────────────────────────────
 
@@ -106,6 +107,7 @@ class PartidaScreen extends ConsumerStatefulWidget {
 class _PartidaScreenState extends ConsumerState<PartidaScreen> {
   PartidaState _estado = const PartidaState();
   String? _casaSelecionada;
+  Set<String> _movimentosPossiveis = {};
 
   // Pré-movimento: gerenciado por service de responsabilidade única
   final _preMoveService = PreMoveService();
@@ -247,10 +249,19 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
 
   void _tratarMovimentoNormal(String casa) {
     if (_casaSelecionada == null) {
-      setState(() => _casaSelecionada = casa);
+      setState(() {
+        _casaSelecionada = casa;
+        _movimentosPossiveis = ChessLogic.movimentosPossiveis(
+          _estado.fen,
+          casa,
+        );
+      });
     } else {
       final from = _casaSelecionada!;
-      setState(() => _casaSelecionada = null);
+      setState(() {
+        _casaSelecionada = null;
+        _movimentosPossiveis.clear();
+      });
       ref.read(webSocketServiceProvider).enviarMovimento(
             widget.partidaId, from, casa);
     }
@@ -258,17 +269,31 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
 
   void _tratarPreMove(String casa) {
     if (_casaSelecionada == null) {
-      setState(() => _casaSelecionada = casa);
+      setState(() {
+        _casaSelecionada = casa;
+        // Para pré-moves, ignoramos de quem é a vez para poder calcular os caminhos
+        _movimentosPossiveis = ChessLogic.movimentosPossiveis(
+          _estado.fen,
+          casa,
+          ignorarVez: true,
+        );
+      });
     } else {
       final from = _casaSelecionada!;
-      setState(() => _casaSelecionada = null);
+      setState(() {
+        _casaSelecionada = null;
+        _movimentosPossiveis.clear();
+      });
       _preMoveService.registrar(from, casa);
     }
   }
 
   void _onArrastado(String from, String to) {
     if (_estado.status != 'EM_ANDAMENTO') return;
-    setState(() => _casaSelecionada = null);
+    setState(() {
+      _casaSelecionada = null;
+      _movimentosPossiveis.clear();
+    });
 
     if (_estado.minhaVez) {
       ref.read(webSocketServiceProvider).enviarMovimento(
@@ -409,6 +434,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                     fen: _estado.fen,
                     casaSelecionada: _casaSelecionada,
                     casaPreMove: casaPreMoveFrom,
+                    movimentosPossiveis: _movimentosPossiveis,
                     invertido: !_estado.minhasCorEhBrancas,
                     lightSquare: chessTheme.lightSquare,
                     darkSquare: chessTheme.darkSquare,

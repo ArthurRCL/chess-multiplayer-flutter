@@ -5,7 +5,7 @@ library chess_logic;
 class ChessLogic {
   /// Dada uma posição FEN e uma casa de origem, retorna todas as casas
   /// para as quais a peça pode legalmente se mover (sem deixar o rei em xeque).
-  static Set<String> movimentosPossiveis(String fen, String casaOrigem) {
+  static Set<String> movimentosPossiveis(String fen, String casaOrigem, {bool ignorarVez = false}) {
     final partes = fen.split(' ');
     final posicao = partes[0];
     final vezDeFen = partes.length > 1 ? partes[1] : 'w';
@@ -19,8 +19,8 @@ class ChessLogic {
     final ehBranca = peca == peca.toUpperCase();
     final vezEhBranca = vezDeFen == 'w';
 
-    // A peça deve ser da cor que tem a vez
-    if (ehBranca != vezEhBranca) return {};
+    // A peça deve ser da cor que tem a vez (a menos que seja um pré-movimento/ignorarVez)
+    if (!ignorarVez && ehBranca != vezEhBranca) return {};
 
     final candidatos = _movimentosBrutos(
       tabuleiro: tabuleiro,
