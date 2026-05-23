@@ -1,0 +1,19 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45">
+  <defs>
+    <radialGradient id="g" cx="35%" cy="28%" r="65%">
+  <stop offset="0%"   stop-color="#707070"/>
+  <stop offset="55%"  stop-color="#323232"/>
+  <stop offset="100%" stop-color="#080808"/>
+</radialGradient>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="2" dy="3" stdDeviation="2.2" flood-color="#00000060"/>
+</filter>
+  </defs>
+  <g filter="url(#ds)">
+    <path d="M13,34 L13,26 C13,19 17,13 23,10 C27,7 33,9 33,15
+             C33,21 27,23 26,23 L32,23 L32,34 Z"
+          fill="url(#g)" stroke="#aaaaaa" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle cx="28" cy="14" r="2.2" fill="#cccccc"/>
+    <rect x="10" y="34" width="25" height="5" rx="2.5" fill="url(#g)" stroke="#aaaaaa" stroke-width="1.2"/>
+  </g>
+</svg>

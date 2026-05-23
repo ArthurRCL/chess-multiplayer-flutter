@@ -9,6 +9,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/glass_card.dart';
+import 'themes_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -54,6 +55,20 @@ class HomeScreen extends ConsumerWidget {
                       subtitle: 'Veja suas partidas anteriores',
                       accentColor: AppColors.purple1,
                       onTap: () => context.push('/historico'),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Card — Personalizar
+                    ActionCard(
+                      icon: Icons.palette_outlined,
+                      title: 'Personalizar',
+                      subtitle: 'Temas de tabuleiro e estilos de peças',
+                      accentColor: const Color(0xFF00D4FF),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ThemesScreen(),
+                        ),
+                      ),
                     ),
                   ],
                 ),
