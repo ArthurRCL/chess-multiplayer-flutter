@@ -34,7 +34,7 @@ class HomeScreen extends ConsumerWidget {
                       title: 'Nova Partida',
                       subtitle: 'Crie uma sala e convide um amigo',
                       isPrimary: true,
-                      onTap: () => _criarPartida(context, ref),
+                      onTap: () => _mostrarOpcoesDeTempo(context, ref),
                     ),
                     const SizedBox(height: 16),
 
@@ -195,9 +195,55 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _criarPartida(BuildContext context, WidgetRef ref) async {
+  void _mostrarOpcoesDeTempo(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Controle de Tempo',
+                style: GoogleFonts.cinzel(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildTimeOption(context, ref, 'Bullet (1 min)', 'BULLET', Icons.flash_on),
+              _buildTimeOption(context, ref, 'Blitz (3 min)', 'BLITZ_3', Icons.timer),
+              _buildTimeOption(context, ref, 'Blitz (5 min)', 'BLITZ_5', Icons.timer),
+              _buildTimeOption(context, ref, 'Rápido (10 min)', 'RAPIDO', Icons.hourglass_bottom),
+              _buildTimeOption(context, ref, 'Sem Limite', 'SEM_LIMITE', Icons.all_inclusive),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeOption(BuildContext context, WidgetRef ref, String title, String modo, IconData icon) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.gold2),
+      title: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+      onTap: () {
+        Navigator.pop(context);
+        _criarPartida(context, ref, modoTempo: modo);
+      },
+    );
+  }
+
+  Future<void> _criarPartida(BuildContext context, WidgetRef ref, {String modoTempo = 'SEM_LIMITE'}) async {
     try {
-      final data = await ref.read(apiServiceProvider).criarPartida();
+      final data = await ref.read(apiServiceProvider).criarPartida(modoTempo: modoTempo);
       final link = data['linkConvite'] as String;
       final id = data['id'] as String;
 
