@@ -7,6 +7,7 @@ import '../../shared/theme/board_theme_preset.dart';
 class TabuleiroWidget extends StatelessWidget {
   final String fen;
   final String? casaSelecionada;
+  final Set<String> movimentosPossiveis;
   /// Casa de origem do pré-movimento pendente (pintada em âmbar).
   final String? casaPreMove;
   final bool invertido;
@@ -22,6 +23,7 @@ class TabuleiroWidget extends StatelessWidget {
     super.key,
     required this.fen,
     required this.casaSelecionada,
+    this.movimentosPossiveis = const {},
     this.casaPreMove,
     required this.invertido,
     required this.lightSquare,
@@ -174,6 +176,28 @@ class TabuleiroWidget extends StatelessWidget {
                                       child: SvgPicture.asset(asset),
                                     ),
                                     child: SvgPicture.asset(asset),
+                                  ),
+                                ),
+                              // Indicador de movimento possível
+                              if (movimentosPossiveis.contains(casa))
+                                Positioned.fill(
+                                  child: Center(
+                                    child: Container(
+                                      width: asset != null ? 30 : 20,
+                                      height: asset != null ? 30 : 20,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: asset != null 
+                                            ? Colors.transparent 
+                                            : Colors.black.withOpacity(0.15),
+                                        border: asset != null
+                                            ? Border.all(
+                                                color: Colors.black.withOpacity(0.2),
+                                                width: 4,
+                                              )
+                                            : null,
+                                      ),
+                                    ),
                                   ),
                                 ),
                             ],
