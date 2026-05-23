@@ -12,6 +12,8 @@ import 'tabuleiro_widget.dart';
 import 'widgets/relogio_widget.dart';
 import 'widgets/painel_fim_partida.dart';
 import '../home/themes_screen.dart';
+import 'chess_logic.dart';
+import 'pecas_capturadas_widget.dart';
 
 // ── Estado da partida ─────────────────────────────────────────────────────────
 
@@ -342,6 +344,23 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
     final preMoveAtual = _preMoveService.atual;
     final casaPreMoveFrom = preMoveAtual?.from;
 
+    // Peças capturadas
+    final capturadas = ChessLogic.pecasCapturadas(_estado.fen);
+    // Adversário em cima, eu em baixo
+    final pecasTopoList = _estado.minhasCorEhBrancas
+        ? capturadas.negras
+        : capturadas.brancas;
+    final pecasTopoLabel = _estado.minhasCorEhBrancas
+        ? 'Capturadas por mim'
+        : 'Capturadas pelo adversário';
+
+    final pecasBaseList = _estado.minhasCorEhBrancas
+        ? capturadas.brancas
+        : capturadas.negras;
+    final pecasBaseLabel = _estado.minhasCorEhBrancas
+        ? 'Capturadas pelo adversário'
+        : 'Capturadas por mim';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_estado.modoSolo
@@ -372,22 +391,28 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
             // Status bar premium
             _buildStatusBar(),
 
-            // Relógio do adversário (topo)
-            if (adversarioTempoMs != -1)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+            // Relógio do adversário (topo) e peças capturadas
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: PecasCapturadas(
+                      label: pecasTopoLabel,
+                      pecas: pecasTopoList,
+                    ),
+                  ),
+                  if (adversarioTempoMs != -1)
                     RelogioWidget(
                       tempoMs: adversarioTempoMs,
                       ativo: adversarioAtivo,
                       label: 'Adversário',
                     ),
-                  ],
-                ),
+                ],
               ),
+            ),
 
             // Tabuleiro com borda elegante
             Expanded(
@@ -422,22 +447,28 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
               ),
             ),
 
-            // Relógio do jogador (base)
-            if (meuTempoMs != -1)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
+            // Relógio do jogador (base) e peças capturadas
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: PecasCapturadas(
+                      label: pecasBaseLabel,
+                      pecas: pecasBaseList,
+                    ),
+                  ),
+                  if (meuTempoMs != -1)
                     RelogioWidget(
                       tempoMs: meuTempoMs,
                       ativo: minhaVezAtiva,
                       label: 'Você',
                     ),
-                  ],
-                ),
+                ],
               ),
+            ),
 
             // Painel de fim de partida (substituindo o chip antigo quando finalizada)
             if (_estado.finalizada)

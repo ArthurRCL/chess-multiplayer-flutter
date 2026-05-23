@@ -34,6 +34,6 @@ Write-Host "🚀 Iniciando app no Chrome..." -ForegroundColor Yellow
 Write-Host "   Backend esperado em: $API_BASE_URL" -ForegroundColor Cyan
 Write-Host ""
 
-flutter run -d chrome `
+flutter run -d chrome --web-port=3001 `
   --dart-define=API_BASE_URL=$API_BASE_URL `
   --dart-define=WS_BASE_URL=$WS_BASE_URL
