@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../shared/theme/board_theme_preset.dart';
 
 /// Renderiza o tabuleiro de xadrez 8x8.
 /// Agora utiliza assets em SVG para máxima fidelidade e suporta Drag & Drop.
@@ -13,6 +14,7 @@ class TabuleiroWidget extends StatelessWidget {
   final Color darkSquare;
   final Color highlightColor;
   final Color selectedColor;
+  final PieceStyle pieceStyle;
   final void Function(String casa) onCasaTocada;
   final void Function(String from, String to) onArrastado;
 
@@ -26,6 +28,7 @@ class TabuleiroWidget extends StatelessWidget {
     required this.darkSquare,
     required this.highlightColor,
     required this.selectedColor,
+    this.pieceStyle = PieceStyle.tradicional,
     required this.onCasaTocada,
     required this.onArrastado,
   });
@@ -53,21 +56,23 @@ class TabuleiroWidget extends StatelessWidget {
     return mapa;
   }
 
-  /// Mapeia o caractere FEN para o SVG da peça Cburnett
+  /// Mapeia o caractere FEN para o SVG da peça, usando a pasta do estilo selecionado.
+  /// Faz fallback para o estilo tradicional se o asset do estilo não existir.
   String? _getSvgAsset(String char) {
+    final folder = pieceStyle.assetFolder;
     switch (char) {
-      case 'K': return 'assets/pieces/wK.svg';
-      case 'Q': return 'assets/pieces/wQ.svg';
-      case 'R': return 'assets/pieces/wR.svg';
-      case 'B': return 'assets/pieces/wB.svg';
-      case 'N': return 'assets/pieces/wN.svg';
-      case 'P': return 'assets/pieces/wP.svg';
-      case 'k': return 'assets/pieces/bK.svg';
-      case 'q': return 'assets/pieces/bQ.svg';
-      case 'r': return 'assets/pieces/bR.svg';
-      case 'b': return 'assets/pieces/bB.svg';
-      case 'n': return 'assets/pieces/bN.svg';
-      case 'p': return 'assets/pieces/bP.svg';
+      case 'K': return '$folder/wK.svg';
+      case 'Q': return '$folder/wQ.svg';
+      case 'R': return '$folder/wR.svg';
+      case 'B': return '$folder/wB.svg';
+      case 'N': return '$folder/wN.svg';
+      case 'P': return '$folder/wP.svg';
+      case 'k': return '$folder/bK.svg';
+      case 'q': return '$folder/bQ.svg';
+      case 'r': return '$folder/bR.svg';
+      case 'b': return '$folder/bB.svg';
+      case 'n': return '$folder/bN.svg';
+      case 'p': return '$folder/bP.svg';
       default: return null;
     }
   }

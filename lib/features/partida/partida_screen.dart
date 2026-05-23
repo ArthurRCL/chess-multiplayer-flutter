@@ -5,12 +5,13 @@ import '../../core/services/api_service.dart';
 import '../../core/services/websocket_service.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../shared/theme/app_theme.dart';
+import '../../shared/theme/theme_preference_provider.dart';
 import '../../shared/widgets/animated_status_chip.dart';
-import 'models/pre_move.dart';
 import 'services/pre_move_service.dart';
 import 'tabuleiro_widget.dart';
 import 'widgets/relogio_widget.dart';
 import 'widgets/painel_fim_partida.dart';
+import '../home/themes_screen.dart';
 
 // ── Estado da partida ─────────────────────────────────────────────────────────
 
@@ -324,8 +325,8 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const chessTheme = AppTheme.defaultTheme;
-    final vezDeBrancas = _estado.vezDe == 'BRANCAS';
+    final themePrefs = ref.watch(themePreferenceProvider);
+    final chessTheme = themePrefs.boardTheme.toChessTheme();
 
     // Os relógios: adversário em cima, meu embaixo
     final meuTempoMs = _estado.minhasCorEhBrancas
@@ -349,6 +350,13 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                 ? 'Aguardando...'
                 : 'Partida em andamento')),
         actions: [
+          IconButton(
+            tooltip: 'Personalizar temas',
+            icon: const Icon(Icons.palette_outlined, color: AppColors.gold2),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ThemesScreen()),
+            ),
+          ),
           if (_estado.status == 'EM_ANDAMENTO')
             IconButton(
               tooltip: 'Desistir',
@@ -406,6 +414,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                     darkSquare: chessTheme.darkSquare,
                     highlightColor: chessTheme.highlightColor,
                     selectedColor: chessTheme.selectedColor,
+                    pieceStyle: themePrefs.pieceStyle,
                     onCasaTocada: _onCasaTocada,
                     onArrastado: _onArrastado,
                   ),

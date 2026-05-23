@@ -107,6 +107,39 @@ class WoodChessTheme implements ChessTheme {
   @override ThemeData get themeData  => AppTheme.darkTheme;
 }
 
+class GlassChessTheme implements ChessTheme {
+  const GlassChessTheme();
+
+  @override String get name => 'Vidro';
+  @override Color get lightSquare    => const Color(0xFFD6EAF8);
+  @override Color get darkSquare     => const Color(0xFF5DADE2);
+  @override Color get highlightColor => const Color(0xAAFFD700);
+  @override Color get selectedColor  => const Color(0xCC82E0AA);
+  @override ThemeData get themeData  => AppTheme.darkTheme;
+}
+
+class NeonChessTheme implements ChessTheme {
+  const NeonChessTheme();
+
+  @override String get name => 'Neon';
+  @override Color get lightSquare    => const Color(0xFF1A2A3A);
+  @override Color get darkSquare     => const Color(0xFF002B3A);
+  @override Color get highlightColor => const Color(0xAA00D4FF);
+  @override Color get selectedColor  => const Color(0xCC00FF88);
+  @override ThemeData get themeData  => AppTheme.darkTheme;
+}
+
+class ClassicGreenChessTheme implements ChessTheme {
+  const ClassicGreenChessTheme();
+
+  @override String get name => 'Clássico Verde';
+  @override Color get lightSquare    => const Color(0xFFEEEED2);
+  @override Color get darkSquare     => const Color(0xFF769656);
+  @override Color get highlightColor => const Color(0xAAF6F669);
+  @override Color get selectedColor  => const Color(0xCC6FCF6F);
+  @override ThemeData get themeData  => AppTheme.darkTheme;
+}
+
 // ─── AppTheme principal ───────────────────────────────────────────────────────
 class AppTheme {
   AppTheme._();

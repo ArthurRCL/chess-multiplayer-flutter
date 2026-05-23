@@ -7,6 +7,7 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/historico_screen.dart';
+import '../../features/home/themes_screen.dart';
 import '../../features/partida/partida_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -51,6 +52,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return PartidaScreen(partidaId: id);
         },
+      ),
+      GoRoute(
+        path: '/temas',
+        name: 'temas',
+        builder: (context, state) => const ThemesScreen(),
       ),
     ],
   );
