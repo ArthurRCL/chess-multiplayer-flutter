@@ -249,42 +249,69 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
 
   void _tratarMovimentoNormal(String casa) {
     if (_casaSelecionada == null) {
-      setState(() {
-        _casaSelecionada = casa;
-        _movimentosPossiveis = ChessLogic.movimentosPossiveis(
-          _estado.fen,
-          casa,
-        );
-      });
+      final possiveis = ChessLogic.movimentosPossiveis(_estado.fen, casa);
+      if (possiveis.isNotEmpty) {
+        setState(() {
+          _casaSelecionada = casa;
+          _movimentosPossiveis = possiveis;
+        });
+      }
     } else {
-      final from = _casaSelecionada!;
-      setState(() {
-        _casaSelecionada = null;
-        _movimentosPossiveis.clear();
-      });
-      ref.read(webSocketServiceProvider).enviarMovimento(
-            widget.partidaId, from, casa);
+      if (_movimentosPossiveis.contains(casa)) {
+        final from = _casaSelecionada!;
+        setState(() {
+          _casaSelecionada = null;
+          _movimentosPossiveis.clear();
+        });
+        _enviarMovimento(from, casa);
+      } else {
+        final possiveis = ChessLogic.movimentosPossiveis(_estado.fen, casa);
+        if (possiveis.isNotEmpty) {
+          setState(() {
+            _casaSelecionada = casa;
+            _movimentosPossiveis = possiveis;
+          });
+        } else {
+          setState(() {
+            _casaSelecionada = null;
+            _movimentosPossiveis.clear();
+          });
+        }
+      }
     }
   }
 
   void _tratarPreMove(String casa) {
     if (_casaSelecionada == null) {
-      setState(() {
-        _casaSelecionada = casa;
-        // Para pré-moves, ignoramos de quem é a vez para poder calcular os caminhos
-        _movimentosPossiveis = ChessLogic.movimentosPossiveis(
-          _estado.fen,
-          casa,
-          ignorarVez: true,
-        );
-      });
+      final possiveis = ChessLogic.movimentosPossiveis(_estado.fen, casa, ignorarVez: true);
+      if (possiveis.isNotEmpty) {
+        setState(() {
+          _casaSelecionada = casa;
+          _movimentosPossiveis = possiveis;
+        });
+      }
     } else {
-      final from = _casaSelecionada!;
-      setState(() {
-        _casaSelecionada = null;
-        _movimentosPossiveis.clear();
-      });
-      _preMoveService.registrar(from, casa);
+      if (_movimentosPossiveis.contains(casa)) {
+        final from = _casaSelecionada!;
+        setState(() {
+          _casaSelecionada = null;
+          _movimentosPossiveis.clear();
+        });
+        _registrarPreMove(from, casa);
+      } else {
+        final possiveis = ChessLogic.movimentosPossiveis(_estado.fen, casa, ignorarVez: true);
+        if (possiveis.isNotEmpty) {
+          setState(() {
+            _casaSelecionada = casa;
+            _movimentosPossiveis = possiveis;
+          });
+        } else {
+          setState(() {
+            _casaSelecionada = null;
+            _movimentosPossiveis.clear();
+          });
+        }
+      }
     }
   }
 
@@ -295,12 +322,33 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
       _movimentosPossiveis.clear();
     });
 
+    final possiveis = ChessLogic.movimentosPossiveis(_estado.fen, from, ignorarVez: !_estado.minhaVez);
+    if (!possiveis.contains(to)) return;
+
     if (_estado.minhaVez) {
-      ref.read(webSocketServiceProvider).enviarMovimento(
-            widget.partidaId, from, to);
+      _enviarMovimento(from, to);
     } else {
-      _preMoveService.registrar(from, to);
+      _registrarPreMove(from, to);
     }
+  }
+
+  // ── Helpers de Movimento ──────────────────────────────────────────────────
+
+  void _enviarMovimento(String from, String to) {
+    String? promocao;
+    if (ChessLogic.isPromocao(_estado.fen, from, to)) {
+      promocao = 'q'; // Auto-promove para Dama por padrão
+    }
+    ref.read(webSocketServiceProvider).enviarMovimento(
+          widget.partidaId, from, to, promocao: promocao);
+  }
+
+  void _registrarPreMove(String from, String to) {
+    String? promocao;
+    if (ChessLogic.isPromocao(_estado.fen, from, to)) {
+      promocao = 'q';
+    }
+    _preMoveService.registrar(from, to, promocao: promocao);
   }
 
   // ── Ações ─────────────────────────────────────────────────────────────────
@@ -475,32 +523,6 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                   meuEmail: _estado.meuEmail ?? '',
                   onRevanche: _solicitarRevanche,
                   onVoltar: () => Navigator.of(context).pop(),
-                ),
-              ),
-
-            // Mensagem de erro
-            if (_estado.erro != null)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.danger.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: AppColors.danger.withOpacity(0.5)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline, color: AppColors.danger),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _estado.erro!,
-                        style: const TextStyle(color: AppColors.danger),
-                      ),
-                    ),
-                  ],
                 ),
               ),
 

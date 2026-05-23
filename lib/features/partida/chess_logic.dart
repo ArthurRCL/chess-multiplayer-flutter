@@ -416,4 +416,14 @@ class ChessLogic {
 
     return (brancas: capturadasBrancas, negras: capturadasNegras);
   }
+
+  /// Verifica se o movimento resulta na promoção de um peão.
+  static bool isPromocao(String fen, String from, String to) {
+    final tab = _parsearFen(fen.split(' ').first);
+    final peca = tab[from];
+    if (peca?.toLowerCase() == 'p') {
+      return to.endsWith('8') || to.endsWith('1');
+    }
+    return false;
+  }
 }
