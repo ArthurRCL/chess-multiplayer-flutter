@@ -11,6 +11,7 @@ import 'services/pre_move_service.dart';
 import 'tabuleiro_widget.dart';
 import 'widgets/relogio_widget.dart';
 import 'widgets/painel_fim_partida.dart';
+import 'widgets/relatorio_ia_dialog.dart';
 import '../home/themes_screen.dart';
 import 'chess_logic.dart';
 import 'pecas_capturadas_widget.dart';
@@ -389,6 +390,15 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
     ref.read(webSocketServiceProvider).solicitarRevanche(widget.partidaId);
   }
 
+  Future<void> _verAnaliseIA() async {
+    final api = ref.read(apiServiceProvider);
+    if (!mounted) return;
+    await RelatorioIADialog.mostrar(
+      context,
+      onGerarRelatorio: () => api.gerarRelatorioIA(widget.partidaId),
+    );
+  }
+
   @override
   void dispose() {
     ref.read(webSocketServiceProvider).desconectar();
@@ -553,6 +563,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                   meuEmail: _estado.meuEmail ?? '',
                   onRevanche: _solicitarRevanche,
                   onVoltar: () => Navigator.of(context).pop(),
+                  onAnaliseIA: _verAnaliseIA,
                 ),
               ),
 

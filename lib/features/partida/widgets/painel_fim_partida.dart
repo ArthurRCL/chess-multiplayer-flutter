@@ -10,6 +10,9 @@ class PainelFimPartida extends StatelessWidget {
   final String meuEmail;
   final VoidCallback onRevanche;
   final VoidCallback onVoltar;
+  /// Callback para abrir o relatório de desempenho gerado pela IA.
+  /// Se null, o botão não é exibido.
+  final VoidCallback? onAnaliseIA;
 
   const PainelFimPartida({
     super.key,
@@ -18,6 +21,7 @@ class PainelFimPartida extends StatelessWidget {
     required this.meuEmail,
     required this.onRevanche,
     required this.onVoltar,
+    this.onAnaliseIA,
   });
 
   String get _titulo {
@@ -74,12 +78,12 @@ class PainelFimPartida extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _corTitulo.withOpacity(0.4),
+          color: _corTitulo.withValues(alpha: 0.4),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: _corTitulo.withOpacity(0.2),
+            color: _corTitulo.withValues(alpha: 0.2),
             blurRadius: 30,
             spreadRadius: 2,
           ),
@@ -124,9 +128,60 @@ class PainelFimPartida extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-          // Botões de ação
+          // Botão de Análise IA (destaque principal)
+          if (onAnaliseIA != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7C3AED), Color(0xFF2563EB)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
+                        blurRadius: 18,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: onAnaliseIA,
+                    icon: const Text('🧠', style: TextStyle(fontSize: 16)),
+                    label: const Text(
+                      'Análise do Treinador IA',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 8),
+
+          // Botões de ação (Início / Revanche)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -166,7 +221,7 @@ class PainelFimPartida extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  shadowColor: const Color(0xFFD4AF37).withOpacity(0.4),
+                  shadowColor: const Color(0xFFD4AF37).withValues(alpha: 0.4),
                 ),
               ),
             ],
