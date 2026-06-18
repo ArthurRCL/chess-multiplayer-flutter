@@ -90,4 +90,18 @@ class ApiService {
     final res = await _dio.get('/api/partidas/historico');
     return res.data as List<dynamic>;
   }
+
+  // ── IA ────────────────────────────────────────────────────────────────────
+
+  /// Solicita ao backend a geração de um relatório de desempenho via IA (Groq/LLaMA).
+  /// O timeout é estendido para 30s pois a IA pode demorar alguns segundos.
+  Future<Map<String, dynamic>> gerarRelatorioIA(String partidaId) async {
+    final res = await _dio.get(
+      '/api/partidas/$partidaId/relatorio-ia',
+      options: Options(receiveTimeout: const Duration(seconds: 30)),
+    );
+    final data = res.data as Map<String, dynamic>;
+    if (data.containsKey('erro')) throw Exception(data['erro']);
+    return data;
+  }
 }
