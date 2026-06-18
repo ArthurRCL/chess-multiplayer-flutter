@@ -7,8 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 String get _wsUrl {
   const custom = String.fromEnvironment('WS_BASE_URL', defaultValue: '');
   if (custom.isNotEmpty) return custom;
-  if (kIsWeb) return 'http://localhost:8080/ws';
-  return 'http://10.0.2.2:8080/ws';
+  return 'http://163.176.148.73:8080/ws';
 }
 
 final webSocketServiceProvider = Provider<WebSocketService>((ref) {

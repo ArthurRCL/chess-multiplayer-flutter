@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
@@ -120,7 +119,8 @@ class HomeScreen extends ConsumerWidget {
                 child: Center(
                   child: Text(
                     nome[0].toUpperCase(),
-                    style: GoogleFonts.cinzel(
+                    style: TextStyle(
+                      fontFamily: 'Cinzel',
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: AppColors.bg0,
@@ -142,7 +142,8 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     Text(
                       nome,
-                      style: GoogleFonts.cinzel(
+                      style: TextStyle(
+                        fontFamily: 'Cinzel',
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -211,7 +212,8 @@ class HomeScreen extends ConsumerWidget {
             children: [
               Text(
                 'Controle de Tempo',
-                style: GoogleFonts.cinzel(
+                style: TextStyle(
+                  fontFamily: 'Cinzel',
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -322,7 +324,8 @@ class _ConviteSheet extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             'Sala Criada! ♟',
-            style: GoogleFonts.cinzel(
+            style: TextStyle(
+              fontFamily: 'Cinzel',
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,

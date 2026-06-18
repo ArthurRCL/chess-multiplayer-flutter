@@ -1,5 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+// Helpers de fonte local — sem dependência de rede
+class _F {
+  _F._();
+  static TextStyle cinzel({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+    List<Shadow>? shadows,
+  }) =>
+      TextStyle(
+        fontFamily: 'Cinzel',
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+        height: height,
+        shadows: shadows,
+      );
+
+  static TextStyle inter({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+  }) =>
+      TextStyle(
+        fontFamily: 'Inter',
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
+}
 
 // ─── Paleta "Onyx & Gold" ────────────────────────────────────────────────────
 class AppColors {
@@ -150,24 +185,21 @@ class AppTheme {
   static ThemeData get woodTheme => darkTheme;
 
   static ThemeData get darkTheme {
-    final cinzel = GoogleFonts.cinzelTextTheme(ThemeData.dark().textTheme);
-    final inter  = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
-
-    // Mistura: Inter para body, Cinzel para display
-    final mergedText = inter.copyWith(
-      displayLarge:  cinzel.displayLarge?.copyWith(color: AppColors.textPrimary),
-      displayMedium: cinzel.displayMedium?.copyWith(color: AppColors.textPrimary),
-      displaySmall:  cinzel.displaySmall?.copyWith(color: AppColors.textPrimary),
-      headlineLarge: cinzel.headlineLarge?.copyWith(color: AppColors.textPrimary),
-      headlineMedium:cinzel.headlineMedium?.copyWith(color: AppColors.textPrimary),
-      headlineSmall: cinzel.headlineSmall?.copyWith(color: AppColors.textPrimary, letterSpacing: 0.5),
-      titleLarge:    inter.titleLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-      titleMedium:   inter.titleMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-      titleSmall:    inter.titleSmall?.copyWith(color: AppColors.textSecondary),
-      bodyLarge:     inter.bodyLarge?.copyWith(color: AppColors.textPrimary),
-      bodyMedium:    inter.bodyMedium?.copyWith(color: AppColors.textSecondary),
-      bodySmall:     inter.bodySmall?.copyWith(color: AppColors.textMuted),
-      labelLarge:    inter.labelLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+    // Mistura: Inter para body, Cinzel para display — fontes empacotadas localmente
+    final mergedText = ThemeData.dark().textTheme.copyWith(
+      displayLarge:  const TextStyle(fontFamily: 'Cinzel', color: AppColors.textPrimary),
+      displayMedium: const TextStyle(fontFamily: 'Cinzel', color: AppColors.textPrimary),
+      displaySmall:  const TextStyle(fontFamily: 'Cinzel', color: AppColors.textPrimary),
+      headlineLarge: const TextStyle(fontFamily: 'Cinzel', color: AppColors.textPrimary),
+      headlineMedium:const TextStyle(fontFamily: 'Cinzel', color: AppColors.textPrimary),
+      headlineSmall: const TextStyle(fontFamily: 'Cinzel', color: AppColors.textPrimary, letterSpacing: 0.5),
+      titleLarge:    const TextStyle(fontFamily: 'Inter',  color: AppColors.textPrimary,   fontWeight: FontWeight.w600),
+      titleMedium:   const TextStyle(fontFamily: 'Inter',  color: AppColors.textPrimary,   fontWeight: FontWeight.w600),
+      titleSmall:    const TextStyle(fontFamily: 'Inter',  color: AppColors.textSecondary),
+      bodyLarge:     const TextStyle(fontFamily: 'Inter',  color: AppColors.textPrimary),
+      bodyMedium:    const TextStyle(fontFamily: 'Inter',  color: AppColors.textSecondary),
+      bodySmall:     const TextStyle(fontFamily: 'Inter',  color: AppColors.textMuted),
+      labelLarge:    const TextStyle(fontFamily: 'Inter',  color: AppColors.textPrimary, fontWeight: FontWeight.w600, letterSpacing: 0.5),
     );
 
     return ThemeData(
@@ -200,7 +232,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.cinzel(
+        titleTextStyle: _F.cinzel(
           color: AppColors.gold2,
           fontSize: 17,
           fontWeight: FontWeight.w700,
@@ -217,7 +249,7 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
-          textStyle: GoogleFonts.inter(
+          textStyle: _F.inter(
             fontWeight: FontWeight.w700,
             fontSize: 15,
             letterSpacing: 0.5,
@@ -232,7 +264,7 @@ class AppTheme {
           side: const BorderSide(color: AppColors.gold2, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+          textStyle: _F.inter(fontWeight: FontWeight.w600, fontSize: 14),
         ),
       ),
 
@@ -240,7 +272,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.gold2,
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
+          textStyle: _F.inter(fontWeight: FontWeight.w500, fontSize: 14),
         ),
       ),
 
@@ -249,8 +281,8 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.glassWhite,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        labelStyle: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14),
-        hintStyle: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14),
+        labelStyle: _F.inter(color: AppColors.textMuted, fontSize: 14),
+        hintStyle: _F.inter(color: AppColors.textMuted, fontSize: 14),
         prefixIconColor: AppColors.textMuted,
         suffixIconColor: AppColors.textMuted,
         enabledBorder: OutlineInputBorder(
@@ -295,7 +327,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.bg2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titleTextStyle: GoogleFonts.cinzel(
+        titleTextStyle: _F.cinzel(
           color: AppColors.textPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w700,
@@ -305,7 +337,7 @@ class AppTheme {
       // ── SnackBar ────────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.surface3,
-        contentTextStyle: GoogleFonts.inter(color: AppColors.textPrimary),
+        contentTextStyle: _F.inter(color: AppColors.textPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),

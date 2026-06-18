@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/theme/board_theme_preset.dart';
 import '../../shared/theme/theme_preference_provider.dart';
@@ -182,7 +181,8 @@ class _SectionHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: GoogleFonts.cinzel(
+                style: TextStyle(
+                  fontFamily: 'Cinzel',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -299,7 +299,8 @@ class _BoardThemeCardState extends State<_BoardThemeCard>
                   Expanded(
                     child: Text(
                       widget.theme.label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: widget.selected
                             ? FontWeight.w700
@@ -434,7 +435,8 @@ class _PieceStyleCard extends StatelessWidget {
                     children: [
                       Text(
                         style.label,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 15,
                           fontWeight: selected
                               ? FontWeight.w700
@@ -460,7 +462,8 @@ class _PieceStyleCard extends StatelessWidget {
                           ),
                           child: Text(
                             'Em breve',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: AppColors.purple1,
@@ -517,7 +520,8 @@ class _ConfirmedButton extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             'Preferências salvas!',
-            style: GoogleFonts.inter(
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: AppColors.success,
