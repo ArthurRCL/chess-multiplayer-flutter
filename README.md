@@ -37,7 +37,7 @@ A força deste projeto reside na separação entre a camada de renderização do
   <img src="https://img.shields.io/badge/Flutter-SDK_3%2B-02569B?style=for-the-badge&logo=flutter&logoColor=white" />
   <img src="https://img.shields.io/badge/Dart-3%2B-0175C2?style=for-the-badge&logo=dart&logoColor=white" />
   <img src="https://img.shields.io/badge/WebSockets-Real_Time-black?style=for-the-badge&logo=socket.io&logoColor=white" />
-  <img src="https://img.shields.io/badge/Chess_Logic-Engine-gray?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Groq-AI_LLaMA_3-F55036?style=for-the-badge&logo=openai&logoColor=white" />
 </div>
 
 ---
@@ -82,5 +82,6 @@ flutter run
 
 - ♟️ **Partidas em Tempo Real** — Jogue contra outros usuários online instantaneamente.
 - ⏱️ **Modo de Relógio** — Diferentes modos de tempo com sincronização automática do servidor.
-- 🎨 **Interface Premium** — Design limpo com efeitos de *Glassmorphism* e componentes animados.
+- 🧠 **Análise por Inteligência Artificial** — Relatórios pós-partida gerados pelo modelo LLaMA 3 via Groq, com notas de desempenho, identificação de aberturas e dicas táticas.
+- 🎨 **Interface Premium** — Design limpo com efeitos de *Glassmorphism* e componentes animados nativos.
 - 🔁 **Revanche** — Sistema de solicitação rápida de revanche após o fim da partida.
