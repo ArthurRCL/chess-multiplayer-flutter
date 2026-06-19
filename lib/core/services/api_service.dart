@@ -10,10 +10,8 @@ import '../storage/secure_storage.dart';
 String get _baseUrl {
   const custom = String.fromEnvironment('API_BASE_URL', defaultValue: '');
   if (custom.isNotEmpty) return custom;
-  // No Chrome/web, o backend está em localhost
-  if (kIsWeb) return 'http://localhost:8080';
-  // No emulador Android, 10.0.2.2 aponta para o localhost da máquina host
-  return 'http://10.0.2.2:8080';
+  // O backend agora está rodando na Oracle Cloud
+  return 'http://163.176.148.73:8080';
 }
 
 final apiServiceProvider = Provider<ApiService>((ref) {

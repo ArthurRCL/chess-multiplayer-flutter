@@ -484,6 +484,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                     child: PecasCapturadas(
                       label: pecasTopoLabel,
                       pecas: pecasTopoList,
+                      pieceStyle: themePrefs.pieceStyle,
                     ),
                   ),
                   if (adversarioTempoMs != -1)
@@ -541,6 +542,7 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                     child: PecasCapturadas(
                       label: pecasBaseLabel,
                       pecas: pecasBaseList,
+                      pieceStyle: themePrefs.pieceStyle,
                     ),
                   ),
                   if (meuTempoMs != -1)
