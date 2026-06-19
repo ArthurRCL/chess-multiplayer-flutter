@@ -23,6 +23,7 @@ class AuthService {
     final data = await _api.login(email, senha);
     await _storage.saveAuth(
       token: data['token'] as String,
+      refreshToken: data['refreshToken'] as String,
       email: data['email'] as String,
       userId: data['id'].toString(),
     );
@@ -32,6 +33,7 @@ class AuthService {
     final data = await _api.register(email, senha);
     await _storage.saveAuth(
       token: data['token'] as String,
+      refreshToken: data['refreshToken'] as String,
       email: data['email'] as String,
       userId: data['id'].toString(),
     );

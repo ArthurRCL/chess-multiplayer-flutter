@@ -386,6 +386,64 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
     );
   }
 
+  void _cancelarPartida() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cancelar Partida?'),
+        content: const Text('Isso excluirá a sala e você voltará para o menu.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Voltar', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: AppColors.textPrimary),
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref.read(apiServiceProvider).deletarPartida(widget.partidaId);
+                if (mounted) Navigator.pop(context); // volta pra home
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+              }
+            },
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _alterarModoTempo() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Alterar Tempo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(title: const Text('Sem Limite'), onTap: () => _atualizarModoTempo('SEM_LIMITE')),
+            ListTile(title: const Text('Bullet (1 min)'), onTap: () => _atualizarModoTempo('BULLET')),
+            ListTile(title: const Text('Blitz (3 min)'), onTap: () => _atualizarModoTempo('BLITZ_3')),
+            ListTile(title: const Text('Blitz (5 min)'), onTap: () => _atualizarModoTempo('BLITZ_5')),
+            ListTile(title: const Text('Rápido (10 min)'), onTap: () => _atualizarModoTempo('RAPIDO')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _atualizarModoTempo(String modoTempo) async {
+    Navigator.pop(context);
+    try {
+      await ref.read(apiServiceProvider).atualizarPartida(widget.partidaId, modoTempo);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Modo de tempo atualizado')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+    }
+  }
+
   void _solicitarRevanche() {
     ref.read(webSocketServiceProvider).solicitarRevanche(widget.partidaId);
   }
@@ -566,6 +624,29 @@ class _PartidaScreenState extends ConsumerState<PartidaScreen> {
                   onRevanche: _solicitarRevanche,
                   onVoltar: () => Navigator.of(context).pop(),
                   onAnaliseIA: _verAnaliseIA,
+                ),
+              ),
+
+            // Botões de gerenciamento (Update/Delete) se for o criador e estiver aguardando
+            if (_estado.status == 'AGUARDANDO' && _estado.minhasCorEhBrancas)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.surface1, foregroundColor: AppColors.textPrimary),
+                      onPressed: _alterarModoTempo,
+                      icon: const Icon(Icons.timer_outlined, color: AppColors.gold1),
+                      label: const Text('Alterar Modo'),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: AppColors.textPrimary),
+                      onPressed: _cancelarPartida,
+                      icon: const Icon(Icons.cancel_outlined),
+                      label: const Text('Cancelar Partida'),
+                    ),
+                  ],
                 ),
               ),
 

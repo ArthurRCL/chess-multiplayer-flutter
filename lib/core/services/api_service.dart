@@ -38,6 +38,36 @@ class ApiService {
         }
         handler.next(options);
       },
+      onError: (DioException e, handler) async {
+        if (e.response?.statusCode == 401) {
+          final refreshToken = await _storage.getRefreshToken();
+          if (refreshToken != null) {
+            try {
+              final res = await Dio(BaseOptions(baseUrl: _baseUrl)).post(
+                '/api/auth/refresh',
+                data: {'refreshToken': refreshToken},
+              );
+              
+              final data = res.data;
+              await _storage.saveAuth(
+                token: data['token'],
+                refreshToken: data['refreshToken'],
+                email: data['email'],
+                userId: data['id'].toString(),
+              );
+              
+              final opts = e.requestOptions;
+              opts.headers['Authorization'] = 'Bearer ${data['token']}';
+              final cloneReq = await _dio.fetch(opts);
+              return handler.resolve(cloneReq);
+            } catch (refreshError) {
+              await _storage.clearAuth();
+              return handler.next(e);
+            }
+          }
+        }
+        handler.next(e);
+      },
     ));
   }
 
@@ -87,6 +117,18 @@ class ApiService {
   Future<List<dynamic>> historico() async {
     final res = await _dio.get('/api/partidas/historico');
     return res.data as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> atualizarPartida(String id, String modoTempo) async {
+    final res = await _dio.put(
+      '/api/partidas/$id',
+      data: {'modoTempo': modoTempo},
+    );
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<void> deletarPartida(String id) async {
+    await _dio.delete('/api/partidas/$id');
   }
 
   // ── IA ────────────────────────────────────────────────────────────────────

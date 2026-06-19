@@ -12,6 +12,7 @@ final secureStorageProvider = Provider<SecureStorageService>(
 /// - Mobile (Android/iOS): usa FlutterSecureStorage com criptografia nativa
 class SecureStorageService {
   static const _tokenKey = 'jwt_token';
+  static const _refreshTokenKey = 'refresh_token';
   static const _userIdKey = 'user_id';
   static const _emailKey = 'user_email';
 
@@ -26,6 +27,7 @@ class SecureStorageService {
 
   Future<void> saveAuth({
     required String token,
+    required String refreshToken,
     required String email,
     required String userId,
   }) async {
@@ -33,12 +35,14 @@ class SecureStorageService {
       final prefs = await SharedPreferences.getInstance();
       await Future.wait([
         prefs.setString(_tokenKey, token),
+        prefs.setString(_refreshTokenKey, refreshToken),
         prefs.setString(_emailKey, email),
         prefs.setString(_userIdKey, userId),
       ]);
     } else {
       await Future.wait([
         _secureStorage!.write(key: _tokenKey, value: token),
+        _secureStorage.write(key: _refreshTokenKey, value: refreshToken),
         _secureStorage.write(key: _emailKey, value: email),
         _secureStorage.write(key: _userIdKey, value: userId),
       ]);
@@ -48,6 +52,7 @@ class SecureStorageService {
   // ── Leitura ───────────────────────────────────────────────────────────────
 
   Future<String?> getToken() => _read(_tokenKey);
+  Future<String?> getRefreshToken() => _read(_refreshTokenKey);
   Future<String?> getEmail() => _read(_emailKey);
   Future<String?> getUserId() => _read(_userIdKey);
 
@@ -63,6 +68,7 @@ class SecureStorageService {
       final prefs = await SharedPreferences.getInstance();
       await Future.wait([
         prefs.remove(_tokenKey),
+        prefs.remove(_refreshTokenKey),
         prefs.remove(_emailKey),
         prefs.remove(_userIdKey),
       ]);
