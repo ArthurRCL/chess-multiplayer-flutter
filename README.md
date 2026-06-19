@@ -78,6 +78,11 @@ flutter pub get
 flutter run
 ```
 
+### Usuário de Teste (Base)
+Para facilitar os testes sem a necessidade de criar uma conta, o backend injeta automaticamente o seguinte usuário na inicialização:
+- **Email:** `admin@email.com`
+- **Senha:** `123456`
+
 ---
 
 - ♟️ **Partidas em Tempo Real** — Jogue contra outros usuários online instantaneamente.
