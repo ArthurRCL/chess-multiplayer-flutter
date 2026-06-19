@@ -6,17 +6,69 @@ import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/animated_status_chip.dart';
 import '../../shared/widgets/glass_card.dart';
 
-class HistoricoScreen extends ConsumerWidget {
+class HistoricoScreen extends ConsumerStatefulWidget {
   const HistoricoScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HistoricoScreen> createState() => _HistoricoScreenState();
+}
+
+class _HistoricoScreenState extends ConsumerState<HistoricoScreen> {
+  late Future<List<dynamic>> _historicoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregar();
+  }
+
+  void _carregar() {
+    _historicoFuture = ref.read(apiServiceProvider).historico();
+  }
+
+  Future<void> _deletar(String id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir do Histórico?'),
+        content: const Text('Isso removerá esta partida do seu histórico.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: AppColors.textPrimary,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      try {
+        await ref.read(apiServiceProvider).deletarPartida(id);
+        setState(() {
+          _carregar();
+        });
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meu Histórico'),
       ),
       body: FutureBuilder<List<dynamic>>(
-        future: ref.read(apiServiceProvider).historico(),
+        future: _historicoFuture,
         builder: (ctx, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -56,7 +108,7 @@ class HistoricoScreen extends ConsumerWidget {
               if (isFinalizada) {
                 if (vencedor != null) {
                   chipType = StatusType.finished;
-                  chipLabel = '🏆 $vencedor';
+                  chipLabel = '🏆 ${_shortEmail(vencedor)}';
                 } else {
                   chipType = StatusType.draw;
                   chipLabel = '🤝 Empate';
@@ -72,7 +124,7 @@ class HistoricoScreen extends ConsumerWidget {
               return GlassCard(
                 elevation: 0,
                 padding: const EdgeInsets.all(16),
-                onTap: isEmAndamento ? () => context.push('/partida/$id') : null,
+                onTap: isEmAndamento || status == 'AGUARDANDO' ? () => context.push('/partida/$id') : null,
                 child: Row(
                   children: [
                     Container(
@@ -124,6 +176,11 @@ class HistoricoScreen extends ConsumerWidget {
                         Icons.arrow_forward_ios_rounded,
                         size: 16,
                         color: AppColors.textMuted,
+                      ),
+                    if (isFinalizada)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                        onPressed: () => _deletar(id),
                       ),
                   ],
                 ),
