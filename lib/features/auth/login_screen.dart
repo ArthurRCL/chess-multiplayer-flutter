@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/services/auth_service.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/chess_background_painter.dart';
@@ -179,7 +178,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         Text(
           'XADREZ ONLINE',
           textAlign: TextAlign.center,
-          style: GoogleFonts.cinzel(
+          style: TextStyle(
+            fontFamily: 'Cinzel',
             fontSize: 28,
             fontWeight: FontWeight.w700,
             color: AppColors.gold2,
