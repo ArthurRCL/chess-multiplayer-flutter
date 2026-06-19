@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router/app_router.dart';
 import '../../core/services/auth_service.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/chess_background_painter.dart';
@@ -69,7 +70,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             _senhaCtrl.text,
           );
       ref.invalidate(isLoggedInProvider);
-      if (mounted) context.go('/home');
+      if (mounted) {
+        final pending = ref.read(pendingRedirectProvider);
+        ref.read(pendingRedirectProvider.notifier).state = null;
+        context.go(pending ?? '/home');
+      }
     } catch (e) {
       setState(() {
         _erro = 'Erro ao criar conta. Email já cadastrado?';

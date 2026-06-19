@@ -10,6 +10,10 @@ import '../../features/home/historico_screen.dart';
 import '../../features/home/themes_screen.dart';
 import '../../features/partida/partida_screen.dart';
 
+/// Rota pendente para redirecionamento pós-login.
+/// Guarda a URL que o usuário tentou acessar antes de ser mandado para /login.
+final pendingRedirectProvider = StateProvider<String?>((ref) => null);
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final isLoggedIn = ref.watch(isLoggedInProvider);
 
@@ -17,11 +21,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/login',
     redirect: (context, state) async {
       final loggedIn = isLoggedIn.valueOrNull ?? false;
+      final currentPath = state.uri.toString();
       final onAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
 
-      if (!loggedIn && !onAuthRoute) return '/login';
-      if (loggedIn && onAuthRoute) return '/home';
+      if (!loggedIn && !onAuthRoute) {
+        // Salva a rota que o usuário tentou acessar
+        ref.read(pendingRedirectProvider.notifier).state = currentPath;
+        return '/login';
+      }
+      if (loggedIn && onAuthRoute) {
+        // Após login, redireciona para a rota pendente (ou /home)
+        final pending = ref.read(pendingRedirectProvider);
+        ref.read(pendingRedirectProvider.notifier).state = null;
+        return pending ?? '/home';
+      }
       return null;
     },
     routes: [
