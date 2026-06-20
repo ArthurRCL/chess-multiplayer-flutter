@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router/app_router.dart';
 import '../../core/services/auth_service.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/chess_background_painter.dart';
@@ -68,7 +69,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           .read(authServiceProvider)
           .login(_emailCtrl.text.trim(), _senhaCtrl.text);
       ref.invalidate(isLoggedInProvider);
-      if (mounted) context.go('/home');
+      if (mounted) {
+        final pending = ref.read(pendingRedirectProvider);
+        ref.read(pendingRedirectProvider.notifier).state = null;
+        context.go(pending ?? '/home');
+      }
     } catch (e) {
       setState(() {
         _erro = 'Email ou senha inválidos';
