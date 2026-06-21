@@ -186,8 +186,8 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(context);
               await ref.read(authServiceProvider).logout();
-              ref.invalidate(isLoggedInProvider);
-              if (context.mounted) context.go('/login');
+              // O AuthService já atualiza isLoggedInProvider internamente.
+              // O GoRouter detecta a mudança e redireciona para /login.
             },
             child: const Text('Sair'),
           ),

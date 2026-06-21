@@ -12,28 +12,41 @@ import '../../features/partida/partida_screen.dart';
 
 /// Rota pendente para redirecionamento pós-login.
 /// Guarda a URL que o usuário tentou acessar antes de ser mandado para /login.
-final pendingRedirectProvider = StateProvider<String?>((ref) => null);
+String? pendingRedirect;
+
+/// Notifier que dispara quando o estado de autenticação muda,
+/// para o GoRouter reavaliar os redirects.
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(this._ref) {
+    _ref.listen<bool?>(isLoggedInProvider, (prev, next) {
+      notifyListeners();
+    });
+  }
+
+  final Ref _ref;
+}
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final isLoggedIn = ref.watch(isLoggedInProvider);
+  final authNotifier = _AuthChangeNotifier(ref);
 
   return GoRouter(
     initialLocation: '/login',
-    redirect: (context, state) async {
-      final loggedIn = isLoggedIn.valueOrNull ?? false;
-      final currentPath = state.uri.toString();
+    refreshListenable: authNotifier,
+    redirect: (context, state) {
+      // Lê o estado atual de auth de forma síncrona
+      final isLoggedIn = ref.read(isLoggedInProvider) ?? false;
       final onAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
 
-      if (!loggedIn && !onAuthRoute) {
+      if (!isLoggedIn && !onAuthRoute) {
         // Salva a rota que o usuário tentou acessar
-        ref.read(pendingRedirectProvider.notifier).state = currentPath;
+        pendingRedirect = state.uri.toString();
         return '/login';
       }
-      if (loggedIn && onAuthRoute) {
+      if (isLoggedIn && onAuthRoute) {
         // Após login, redireciona para a rota pendente (ou /home)
-        final pending = ref.read(pendingRedirectProvider);
-        ref.read(pendingRedirectProvider.notifier).state = null;
+        final pending = pendingRedirect;
+        pendingRedirect = null;
         return pending ?? '/home';
       }
       return null;
