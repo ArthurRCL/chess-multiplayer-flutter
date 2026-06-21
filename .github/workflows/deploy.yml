@@ -6,8 +6,21 @@ on:
       - main
   workflow_dispatch:
 
+# Permissões necessárias para publicar no GitHub Pages diretamente
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   build_and_deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
@@ -24,11 +37,16 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Web
-        # The API_BASE_URL points to the Render service. Replace 'chess-multiplayer-api' with your exact Render app name if different.
         run: flutter build web --release --base-href /chess-multiplayer-flutter/ --dart-define=API_BASE_URL=https://chess-multiplayer-api.onrender.com
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
+          path: './build/web'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
