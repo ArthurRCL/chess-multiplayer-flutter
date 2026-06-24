@@ -1,16 +1,46 @@
 # ── Stage 1: Build Flutter Web ──────────────────────────────────
-FROM instrumentisto/flutter:3.22.0 AS build
+FROM ubuntu:24.04 AS build
+
+# Avoid interactive prompts during apt install
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install minimal dependencies for Flutter Web build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git unzip ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Flutter SDK (version matching pubspec.lock requirements: >=3.38.4)
+ENV FLUTTER_VERSION=3.44.3
+ENV FLUTTER_HOME=/opt/flutter
+ENV PATH="$FLUTTER_HOME/bin:$PATH"
+
+RUN git clone --depth 1 --branch ${FLUTTER_VERSION} \
+    https://github.com/flutter/flutter.git ${FLUTTER_HOME} \
+    && flutter precache --web \
+    && flutter doctor -v
+
+# Limit Dart VM memory to avoid OOM on low-memory servers (1GB RAM + swap)
+ENV DART_VM_OPTIONS="--old_gen_heap_size=512"
 
 WORKDIR /app
 
 # Copy dependency files first for better Docker cache
 COPY pubspec.yaml pubspec.lock ./
 
-# Get dependencies
+# Create a minimal lib file so pub get can resolve (cache layer)
+RUN mkdir -p lib && echo "void main() {}" > lib/main.dart
+
+# Get dependencies (cached unless pubspec changes)
 RUN flutter pub get
 
-# Copy the rest of the source code
-COPY . .
+# Remove the dummy file
+RUN rm lib/main.dart
+
+# Copy source code and assets
+COPY lib/ lib/
+COPY web/ web/
+COPY assets/ assets/
+COPY analysis_options.yaml ./
 
 # Build Flutter Web release
 ARG API_BASE_URL=http://136.248.113.214:8080

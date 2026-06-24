@@ -1,14 +1,35 @@
+# Version control
 .git
 .github
-.dart_tool
+.gitignore
+
+# IDE
 .idea
 .vscode
+.metadata
+devtools_options.yaml
+
+# Dart/Flutter caches
+.dart_tool
+.packages
 build
+
+# Platform-specific (not needed for web build)
 android
 ios
 macos
 linux
 windows
+
+# Tests
 test
+
+# Documentation and scripts
 *.md
 *.ps1
+check_size.ps1
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
