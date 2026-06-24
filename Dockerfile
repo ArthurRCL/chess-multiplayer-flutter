@@ -1,5 +1,5 @@
 # ── Stage 1: Build Flutter Web ──────────────────────────────────
-FROM ghcr.io/cirruslabs/flutter:3.22.0 AS build
+FROM instrumentisto/flutter:3.22.0 AS build
 
 WORKDIR /app
 
